@@ -4,6 +4,10 @@ import com.group33.cp2.motorph.model.CompensationDetails;
 import com.group33.cp2.motorph.model.Deductions;
 import com.group33.cp2.motorph.model.Payslip;
 
+import com.group33.cp2.motorph.model.PayslipReport;
+import com.group33.cp2.motorph.model.Employee;
+import com.group33.cp2.motorph.model.Payroll;
+import java.time.LocalDate;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -51,6 +55,30 @@ public class PayslipService {
                 String.format("%.2f", d.getTax()),
                 String.format("%.2f", d.getTotal()),
                 String.format("%.2f", cd.getNetSalary())
+                
         );
     }
+    // Report entry method — generates a PayslipReport for an employee and period.
+// Reuses existing payroll logic via Payroll and Payslip — no recalculation.
+    public PayslipReport generatePayslip(String employeeId, 
+                                          com.group33.cp2.motorph.model.Employee emp,
+                                          java.time.LocalDate start, 
+                                          java.time.LocalDate end) {
+        com.group33.cp2.motorph.model.Payroll payroll = 
+            new com.group33.cp2.motorph.model.Payroll(employeeId, emp, start, end);
+        payroll.calculateNetSalary();
+        com.group33.cp2.motorph.model.Payslip payslip = payroll.generatePayslip();
+        return new com.group33.cp2.motorph.model.PayslipReport(emp, payslip);
+    }
+
+    // Generates and formats a payslip report as a printable string.
+    public String generateFormattedPayslip(String employeeId,
+                                            com.group33.cp2.motorph.model.Employee emp,
+                                            java.time.LocalDate start,
+                                            java.time.LocalDate end) {
+        PayslipReport report = generatePayslip(employeeId, emp, start, end);
+        return PayslipFormatter.format(report);
+}
+    
+    
 }
