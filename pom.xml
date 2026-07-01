@@ -46,24 +46,64 @@
             <artifactId>mysql-connector-j</artifactId>
             <version>8.0.33</version>
         </dependency>
+        
+         <!-- JasperReports core -->
+        <dependency>
+            <groupId>net.sf.jasperreports</groupId>
+            <artifactId>jasperreports</artifactId>
+            <version>6.21.0</version>
+        </dependency>
 
-        <!--
-            NOTE: jcalendar (com.toedter:jcalendar:1.4) and AbsoluteLayout
-            (org.netbeans.external:AbsoluteLayout:RELEASE240) are NOT included
-            because they are not available in Maven Central.
+        <!-- iText PDF backend (required by JasperReports) -->
+        <dependency>
+            <groupId>com.lowagie</groupId>
+            <artifactId>itext</artifactId>
+            <version>2.1.7</version>
+        </dependency>
+        
+        <!-- Commons BeanUtils -->
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <version>1.9.4</version>
+        </dependency>
 
-            jcalendar was originally used by:
-              - forms/NewEmployeeFrame.java
-              - forms/ViewEmployeeFrame.java
+        <!-- Commons Digester -->
+        <dependency>
+            <groupId>commons-digester</groupId>
+            <artifactId>commons-digester</artifactId>
+            <version>2.1</version>
+        </dependency>
 
-            Since these dependencies are unavailable, the classes that use
-            JDateChooser (PayrollFormMs1, NewEmployeeFrame, ViewEmployeeFrame)
-            have been rewritten to use JComboBox-based date pickers instead.
+        <!-- Commons Collections -->
+        <dependency>
+            <groupId>commons-collections</groupId>
+            <artifactId>commons-collections</artifactId>
+            <version>3.2.2</version>
+        </dependency>
 
-            AbsoluteLayout was a NetBeans GUI builder layout manager;
-            it is not needed because all layout code uses standard Swing
-            layout managers (GroupLayout, GridLayout, BoxLayout, etc.).
-        -->
+        <!-- Commons Logging -->
+        <dependency>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+            <version>1.2</version>
+        </dependency>
+
+        <!-- SLF4J (required by JasperReports) -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.36</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.36</version>
+        </dependency>
+
+
+    
+       
     </dependencies>
 
     <build>

@@ -286,11 +286,26 @@ public final class EmployeeService {
     }
 
     // Returns the employee with the given ID, or null if not found.
+    // ── Method Overloading: getEmployeeById ──────────────────────────────────
+    // Overload 1 — finds employee by ID string (standard lookup).
     public Employee getEmployeeById(String employeeId) {
         for (Employee e : employeeList) {
             if (e.getEmployeeID().equals(employeeId)) return e;
         }
         return null;
+    }
+
+    // Overload 2 — finds employee by numeric ID (convenience for callers that already
+    // have an int, e.g. report generators iterating a payroll record set).
+    public Employee getEmployeeById(int employeeId) {
+        return getEmployeeById(String.valueOf(employeeId));
+    }
+
+    // Overload 3 — finds employee by ID with a fallback default if not found,
+    // so callers avoid null checks when a placeholder Employee is acceptable.
+    public Employee getEmployeeById(String employeeId, Employee defaultEmployee) {
+        Employee found = getEmployeeById(employeeId);
+        return found != null ? found : defaultEmployee;
     }
 
     // Returns the next available employee ID (max existing ID + 1).

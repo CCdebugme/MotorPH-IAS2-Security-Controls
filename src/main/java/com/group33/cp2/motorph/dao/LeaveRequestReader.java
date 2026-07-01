@@ -12,7 +12,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-// LeaveRequests.csv. No other class opens this file directly.
+// leaveRequests.csv. No other class opens this file directly.
 public class LeaveRequestReader {
 
     private static final String FILE_PATH = "src/main/resources/data/LeaveRequests.csv";

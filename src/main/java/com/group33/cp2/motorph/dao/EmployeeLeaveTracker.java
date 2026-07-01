@@ -2,8 +2,8 @@ package com.group33.cp2.motorph.dao;
 
 import java.sql.*;
 
-// Owns read/write access to leave_balances table.
-// No CSV access remains — all data comes from MySQL via JDBC.
+// owns read/write access to leave_balances table.
+// no CSV access remains  all data comes from MySQL via JDBC.
 public class EmployeeLeaveTracker {
 
     private static final String SICK_LEAVE     = "Sick Leave";

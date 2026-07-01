@@ -8,8 +8,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-// Owns read/write access to attendance table.
-// No CSV access remains — all data comes from MySQL via JDBC.
+// owns read/write access to attendance table.
+// no CSV access remains  all data comes from MySQL via JDBC.
 public class AttendanceDAO {
 
     public List<Attendance> loadAllAttendance() throws SQLException {

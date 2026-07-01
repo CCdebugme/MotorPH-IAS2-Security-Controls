@@ -6,6 +6,8 @@ import com.group33.cp2.motorph.model.GovernmentDetails;
 import com.group33.cp2.motorph.model.LeaveRequest;
 import com.group33.cp2.motorph.model.Payroll;
 import com.group33.cp2.motorph.model.Payslip;
+import com.group33.cp2.motorph.report.ReportException;
+import com.group33.cp2.motorph.report.ReportService;
 import com.group33.cp2.motorph.service.LeaveService;
 import com.group33.cp2.motorph.service.TimeTrackingService;
 import com.group33.cp2.motorph.util.Constants;
@@ -23,6 +25,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.io.File;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
@@ -32,6 +35,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -43,10 +47,11 @@ import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingWorker;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.AbstractDocument;
 
-// Employee self-service dashboard — info, payslip, time tracking, and leave tabs.
+// Employee self-service dashboard  info, payslip, time tracking, and leave tabs.
 public class EmployeeDashboard extends JFrame {
 
     private static final Color EMPLOYEE_VIOLET = new Color(128, 83, 214);
@@ -60,6 +65,7 @@ public class EmployeeDashboard extends JFrame {
     private final Employee            employee;
     private final LeaveService        leaveService;
     private final TimeTrackingService timeTrackingService;
+    private final ReportService       reportService = new ReportService();
     /** Non-null when opened from a role dashboard; null for regular employee logins. */
     private final Runnable            onBack;
 
@@ -392,10 +398,24 @@ public class EmployeeDashboard extends JFrame {
         btnCalculate.setPreferredSize(new Dimension(220, 48));
         btnCalculate.addActionListener(e -> calculatePayslip());
 
-        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        JButton btnDownloadPdf = new JButton("Download Payslip PDF");
+        btnDownloadPdf.setBackground(EMPLOYEE_GREEN);
+        btnDownloadPdf.setForeground(Color.WHITE);
+        btnDownloadPdf.setFont(new Font("Noto Sans", Font.BOLD, 13));
+        btnDownloadPdf.setFocusPainted(false);
+        btnDownloadPdf.setOpaque(true);
+        btnDownloadPdf.setPreferredSize(new Dimension(220, 48));
+        btnDownloadPdf.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(EMPLOYEE_GREEN_DARK, 1, true),
+                BorderFactory.createEmptyBorder(9, 16, 9, 16)
+        ));
+        btnDownloadPdf.addActionListener(e -> downloadPayslipPdf());
+
+        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         btnRow.setBackground(EMPLOYEE_BG);
         btnRow.setAlignmentX(Component.LEFT_ALIGNMENT);
         btnRow.add(btnCalculate);
+        btnRow.add(btnDownloadPdf);
 
         panel.add(pageTitle);
         panel.add(Box.createVerticalStrut(4));
@@ -510,6 +530,61 @@ public class EmployeeDashboard extends JFrame {
                     JOptionPane.showMessageDialog(EmployeeDashboard.this,
                             "Failed to calculate payslip: " + ex.getMessage(),
                             "Payroll Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }.execute();
+    }
+
+    // Generates a payslip PDF for the selected date range and saves it to a user-chosen location.
+    private void downloadPayslipPdf() {
+        LocalDate startDate = payrollStartChooser.getSelectedDate();
+        LocalDate endDate   = payrollEndChooser.getSelectedDate();
+
+        if (startDate == null || endDate == null) {
+            JOptionPane.showMessageDialog(this,
+                    "Please select a payroll coverage period first, then click Download.",
+                    "Missing Period", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String period = startDate + " to " + endDate;
+
+        // Ask user where to save
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Save Payslip PDF");
+        chooser.setFileFilter(new FileNameExtensionFilter("PDF Files (*.pdf)", "pdf"));
+        chooser.setSelectedFile(new File(
+                "Payslip_" + employee.getEmployeeID() + "_" + startDate + ".pdf"));
+
+        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return;
+
+        File outputFile = chooser.getSelectedFile();
+        if (!outputFile.getName().toLowerCase().endsWith(".pdf")) {
+            outputFile = new File(outputFile.getAbsolutePath() + ".pdf");
+        }
+
+        final File finalOutput = outputFile;
+        new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                reportService.generatePayslip(
+                        employee.getEmployeeID(), period, finalOutput);
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    get();
+                    JOptionPane.showMessageDialog(EmployeeDashboard.this,
+                            "Payslip saved to:\n" + finalOutput.getAbsolutePath(),
+                            "Payslip Downloaded", JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception ex) {
+                    String msg = ex.getCause() != null
+                            ? ex.getCause().getMessage() : ex.getMessage();
+                    JOptionPane.showMessageDialog(EmployeeDashboard.this,
+                            "Failed to generate payslip PDF:\n" + msg,
+                            "Report Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
         }.execute();

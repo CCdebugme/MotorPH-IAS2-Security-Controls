@@ -1,0 +1,438 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports
+                                  http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="payslip"
+              pageWidth="595"
+              pageHeight="842"
+              columnWidth="535"
+              leftMargin="30"
+              rightMargin="30"
+              topMargin="20"
+              bottomMargin="20"
+              uuid="a1b2c3d4-0001-0001-0001-000000000001">
+
+    <parameter name="EMPLOYEE_ID"    class="java.lang.String"/>
+    <parameter name="EMPLOYEE_NAME"  class="java.lang.String"/>
+    <parameter name="POSITION"       class="java.lang.String"/>
+    <parameter name="DEPARTMENT"     class="java.lang.String"/>
+    <parameter name="PERIOD"         class="java.lang.String"/>
+    <parameter name="PERIOD_START"   class="java.lang.String"/>
+    <parameter name="PERIOD_END"     class="java.lang.String"/>
+    <parameter name="PAYSLIP_NO"     class="java.lang.String"/>
+
+    <!-- Earnings -->
+    <parameter name="BASIC_SALARY"    class="java.lang.Double"/>
+    <parameter name="DAILY_RATE"      class="java.lang.Double"/>
+    <parameter name="DAYS_WORKED"     class="java.lang.Double"/>
+    <parameter name="OVERTIME"        class="java.lang.Double"/>
+    <parameter name="GROSS_INCOME"    class="java.lang.Double"/>
+
+    <!-- Benefits -->
+    <parameter name="RICE_SUBSIDY"    class="java.lang.Double"/>
+    <parameter name="PHONE_ALLOW"     class="java.lang.Double"/>
+    <parameter name="CLOTHING_ALLOW"  class="java.lang.Double"/>
+    <parameter name="TOTAL_BENEFITS"  class="java.lang.Double"/>
+
+    <!-- Deductions -->
+    <parameter name="SSS"             class="java.lang.Double"/>
+    <parameter name="PHILHEALTH"      class="java.lang.Double"/>
+    <parameter name="PAGIBIG"         class="java.lang.Double"/>
+    <parameter name="TAX"             class="java.lang.Double"/>
+    <parameter name="TOTAL_DEDUCT"    class="java.lang.Double"/>
+
+    <!-- Summary -->
+    <parameter name="GROSS_PAY"       class="java.lang.Double"/>
+    <parameter name="NET_PAY"         class="java.lang.Double"/>
+
+    <!-- Gov numbers -->
+    <parameter name="SSS_NO"          class="java.lang.String"/>
+    <parameter name="PHILHEALTH_NO"   class="java.lang.String"/>
+    <parameter name="TIN_NO"          class="java.lang.String"/>
+    <parameter name="PAGIBIG_NO"      class="java.lang.String"/>
+
+    <queryString><![CDATA[]]></queryString>
+
+    <title>
+        <band height="290" splitType="Stretch">
+
+            <image scaleImage="RetainShape" hAlign="Left" vAlign="Middle">
+                <reportElement x="0" y="0" width="90" height="75"/>
+                <imageExpression><![CDATA[getClass().getResource("/images/MTPH.png")]]></imageExpression>
+            </image>
+
+            <staticText>
+                <reportElement x="100" y="5" width="300" height="28" forecolor="#19559B"/>
+                <textElement verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="22" isBold="true"/>
+                </textElement>
+                <text><![CDATA[MotorPH]]></text>
+            </staticText>
+
+            <staticText>
+                <reportElement x="100" y="33" width="420" height="12" forecolor="#646E8C"/>
+                <textElement><font fontName="SansSerif" size="8"/></textElement>
+                <text><![CDATA[7 Jupiter Avenue cor. F. Sandoval Jr., Bagong Nayon, Quezon City]]></text>
+            </staticText>
+
+            <staticText>
+                <reportElement x="100" y="46" width="420" height="12" forecolor="#646E8C"/>
+                <textElement><font fontName="SansSerif" size="8"/></textElement>
+                <text><![CDATA[Phone: (028) 911-5071 / (028) 911-5072 / (028) 911-5073]]></text>
+            </staticText>
+
+            <staticText>
+                <reportElement x="100" y="59" width="300" height="12" forecolor="#646E8C"/>
+                <textElement><font fontName="SansSerif" size="8"/></textElement>
+                <text><![CDATA[Email: corporate@motorph.com]]></text>
+            </staticText>
+
+            <line>
+                <reportElement x="0" y="82" width="535" height="1" forecolor="#D2DAE8"/>
+            </line>
+
+            <staticText>
+                <reportElement x="0" y="90" width="535" height="20" forecolor="#19559B"/>
+                <textElement textAlignment="Center">
+                    <font fontName="SansSerif" size="13" isBold="true" isUnderline="true"/>
+                </textElement>
+                <text><![CDATA[EMPLOYEE PAYSLIP]]></text>
+            </staticText>
+
+            <rectangle>
+                <reportElement x="0" y="118" width="535" height="57" backcolor="#FFFFFF" mode="Opaque" forecolor="#D2DAE8"/>
+            </rectangle>
+
+            <line><reportElement x="0"   y="137" width="535" height="1" forecolor="#D2DAE8"/></line>
+            <line><reportElement x="0"   y="156" width="535" height="1" forecolor="#D2DAE8"/></line>
+
+            <line><reportElement x="133" y="118" width="1"   height="57" forecolor="#D2DAE8"/></line>
+            <line><reportElement x="268" y="118" width="1"   height="57" forecolor="#D2DAE8"/></line>
+            <line><reportElement x="401" y="118" width="1"   height="57" forecolor="#D2DAE8"/></line>
+
+            <staticText>
+                <reportElement x="4" y="120" width="128" height="16" backcolor="#DCE6F5" mode="Opaque" forecolor="#19559B"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="7" isBold="true"/></textElement>
+                <text><![CDATA[PAYSLIP NO]]></text>
+            </staticText>
+            <textField isBlankWhenNull="true">
+                <reportElement x="136" y="120" width="130" height="16" forecolor="#162239"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="8" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{PAYSLIP_NO}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="272" y="120" width="128" height="16" backcolor="#DCE6F5" mode="Opaque" forecolor="#19559B"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="7" isBold="true"/></textElement>
+                <text><![CDATA[PERIOD START DATE]]></text>
+            </staticText>
+            <textField isBlankWhenNull="true">
+                <reportElement x="404" y="120" width="128" height="16" forecolor="#162239"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="8" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{PERIOD_START}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="4" y="139" width="128" height="16" backcolor="#DCE6F5" mode="Opaque" forecolor="#19559B"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="7" isBold="true"/></textElement>
+                <text><![CDATA[EMPLOYEE ID]]></text>
+            </staticText>
+            <textField isBlankWhenNull="true">
+                <reportElement x="136" y="139" width="130" height="16" forecolor="#162239"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="8" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{EMPLOYEE_ID}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="272" y="139" width="128" height="16" backcolor="#DCE6F5" mode="Opaque" forecolor="#19559B"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="7" isBold="true"/></textElement>
+                <text><![CDATA[PERIOD END DATE]]></text>
+            </staticText>
+            <textField isBlankWhenNull="true">
+                <reportElement x="404" y="139" width="128" height="16" forecolor="#162239"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="8" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{PERIOD_END}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="4" y="158" width="128" height="16" backcolor="#DCE6F5" mode="Opaque" forecolor="#19559B"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="7" isBold="true"/></textElement>
+                <text><![CDATA[EMPLOYEE NAME]]></text>
+            </staticText>
+            <textField isBlankWhenNull="true">
+                <reportElement x="136" y="158" width="130" height="16" forecolor="#162239"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="8" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{EMPLOYEE_NAME}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="272" y="158" width="128" height="16" backcolor="#DCE6F5" mode="Opaque" forecolor="#19559B"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="7" isBold="true"/></textElement>
+                <text><![CDATA[EMPLOYEE POSITION/DEPARTMENT]]></text>
+            </staticText>
+            <textField isBlankWhenNull="true">
+                <reportElement x="404" y="158" width="128" height="16" forecolor="#162239"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="8" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{POSITION} + " / " + $P{DEPARTMENT}]]></textFieldExpression>
+            </textField>
+
+        </band>
+    </title>
+
+    <detail>
+        <band height="370" splitType="Stretch">
+
+            <rectangle>
+                <reportElement x="0" y="0" width="535" height="18" backcolor="#19559B" mode="Opaque" forecolor="#19559B"/>
+            </rectangle>
+            <staticText>
+                <reportElement x="6" y="2" width="200" height="14" forecolor="#FFFFFF" backcolor="#19559B" mode="Opaque"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="9" isBold="true"/></textElement>
+                <text><![CDATA[EARNINGS]]></text>
+            </staticText>
+
+            <staticText>
+                <reportElement x="10" y="24" width="300" height="14" forecolor="#162239"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="8"/></textElement>
+                <text><![CDATA[Semi-Monthly Rate]]></text>
+            </staticText>
+            <textField pattern="₱#,##0.00" isBlankWhenNull="true">
+                <reportElement x="380" y="24" width="150" height="14" forecolor="#162239"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="SansSerif" size="8" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{BASIC_SALARY}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="10" y="42" width="300" height="14" forecolor="#162239"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="8"/></textElement>
+                <text><![CDATA[Daily Rate]]></text>
+            </staticText>
+            <textField pattern="₱#,##0.00" isBlankWhenNull="true">
+                <reportElement x="380" y="42" width="150" height="14" forecolor="#162239"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="SansSerif" size="8" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{DAILY_RATE}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="10" y="60" width="300" height="14" forecolor="#162239"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="8"/></textElement>
+                <text><![CDATA[Days Worked]]></text>
+            </staticText>
+            <textField isBlankWhenNull="true">
+            <reportElement x="380" y="60" width="150" height="14" forecolor="#162239"/>
+            <textElement textAlignment="Right" verticalAlignment="Middle">
+                <font fontName="SansSerif" size="8" isBold="true"/>
+            </textElement>
+            <textFieldExpression><![CDATA[$P{DAYS_WORKED}.intValue() + " days"]]></textFieldExpression>
+        </textField>
+
+            <staticText>
+                <reportElement x="10" y="78" width="300" height="14" forecolor="#162239"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="8"/></textElement>
+                <text><![CDATA[Overtime]]></text>
+            </staticText>
+            <textField pattern="₱#,##0.00" isBlankWhenNull="true">
+                <reportElement x="380" y="78" width="150" height="14" forecolor="#162239"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="SansSerif" size="8" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{OVERTIME}]]></textFieldExpression>
+            </textField>
+
+            <rectangle>
+                <reportElement x="0" y="96" width="535" height="18" backcolor="#DCE6F5" mode="Opaque" forecolor="#D2DAE8"/>
+            </rectangle>
+            <staticText>
+                <reportElement x="10" y="98" width="300" height="14" forecolor="#19559B"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="9" isBold="true"/></textElement>
+                <text><![CDATA[GROSS INCOME]]></text>
+            </staticText>
+            <textField pattern="₱#,##0.00" isBlankWhenNull="true">
+                <reportElement x="380" y="98" width="150" height="14" forecolor="#19559B"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="SansSerif" size="9" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{GROSS_INCOME}]]></textFieldExpression>
+            </textField>
+
+            <rectangle>
+                <reportElement x="0" y="124" width="535" height="18" backcolor="#19559B" mode="Opaque" forecolor="#19559B"/>
+            </rectangle>
+            <staticText>
+                <reportElement x="6" y="126" width="200" height="14" forecolor="#FFFFFF" backcolor="#19559B" mode="Opaque"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="9" isBold="true"/></textElement>
+                <text><![CDATA[BENEFITS]]></text>
+            </staticText>
+
+            <staticText>
+                <reportElement x="10" y="148" width="300" height="14" forecolor="#162239"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="8"/></textElement>
+                <text><![CDATA[Rice Subsidy]]></text>
+            </staticText>
+            <textField pattern="₱#,##0.00" isBlankWhenNull="true">
+                <reportElement x="380" y="148" width="150" height="14" forecolor="#162239"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="SansSerif" size="8" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{RICE_SUBSIDY}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="10" y="166" width="300" height="14" forecolor="#162239"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="8"/></textElement>
+                <text><![CDATA[Phone Allowance]]></text>
+            </staticText>
+            <textField pattern="₱#,##0.00" isBlankWhenNull="true">
+                <reportElement x="380" y="166" width="150" height="14" forecolor="#162239"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="SansSerif" size="8" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{PHONE_ALLOW}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="10" y="184" width="300" height="14" forecolor="#162239"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="8"/></textElement>
+                <text><![CDATA[Clothing Allowance]]></text>
+            </staticText>
+            <textField pattern="₱#,##0.00" isBlankWhenNull="true">
+                <reportElement x="380" y="184" width="150" height="14" forecolor="#162239"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="SansSerif" size="8" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{CLOTHING_ALLOW}]]></textFieldExpression>
+            </textField>
+
+            <rectangle>
+                <reportElement x="0" y="202" width="535" height="18" backcolor="#DCE6F5" mode="Opaque" forecolor="#D2DAE8"/>
+            </rectangle>
+            <staticText>
+                <reportElement x="10" y="204" width="300" height="14" forecolor="#19559B"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="9" isBold="true"/></textElement>
+                <text><![CDATA[TOTAL]]></text>
+            </staticText>
+            <textField pattern="₱#,##0.00" isBlankWhenNull="true">
+                <reportElement x="380" y="204" width="150" height="14" forecolor="#19559B"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="SansSerif" size="9" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{TOTAL_BENEFITS}]]></textFieldExpression>
+            </textField>
+
+            <rectangle>
+                <reportElement x="0" y="228" width="535" height="18" backcolor="#19559B" mode="Opaque" forecolor="#19559B"/>
+            </rectangle>
+            <staticText>
+                <reportElement x="6" y="230" width="200" height="14" forecolor="#FFFFFF" backcolor="#19559B" mode="Opaque"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="9" isBold="true"/></textElement>
+                <text><![CDATA[DEDUCTIONS]]></text>
+            </staticText>
+
+            <staticText>
+                <reportElement x="10" y="252" width="300" height="14" forecolor="#162239"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="8"/></textElement>
+                <text><![CDATA[Social Security System]]></text>
+            </staticText>
+            <textField pattern="₱#,##0.00" isBlankWhenNull="true">
+                <reportElement x="380" y="252" width="150" height="14" forecolor="#162239"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="SansSerif" size="8" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{SSS}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="10" y="270" width="300" height="14" forecolor="#162239"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="8"/></textElement>
+                <text><![CDATA[Philhealth]]></text>
+            </staticText>
+            <textField pattern="₱#,##0.00" isBlankWhenNull="true">
+                <reportElement x="380" y="270" width="150" height="14" forecolor="#162239"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="SansSerif" size="8" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{PHILHEALTH}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="10" y="288" width="300" height="14" forecolor="#162239"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="8"/></textElement>
+                <text><![CDATA[Pag-Ibig]]></text>
+            </staticText>
+            <textField pattern="₱#,##0.00" isBlankWhenNull="true">
+                <reportElement x="380" y="288" width="150" height="14" forecolor="#162239"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="SansSerif" size="8" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{PAGIBIG}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="10" y="306" width="300" height="14" forecolor="#162239"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="8"/></textElement>
+                <text><![CDATA[Withholding Tax]]></text>
+            </staticText>
+            <textField pattern="₱#,##0.00" isBlankWhenNull="true">
+                <reportElement x="380" y="306" width="150" height="14" forecolor="#162239"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="SansSerif" size="8" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{TAX}]]></textFieldExpression>
+            </textField>
+
+            <rectangle>
+                <reportElement x="0" y="324" width="535" height="18" backcolor="#DCE6F5" mode="Opaque" forecolor="#D2DAE8"/>
+            </rectangle>
+            <staticText>
+                <reportElement x="10" y="326" width="300" height="14" forecolor="#19559B"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="9" isBold="true"/></textElement>
+                <text><![CDATA[TOTAL DEDUCTIONS]]></text>
+            </staticText>
+            <textField pattern="₱#,##0.00" isBlankWhenNull="true">
+                <reportElement x="380" y="326" width="150" height="14" forecolor="#19559B"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="SansSerif" size="9" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{TOTAL_DEDUCT}]]></textFieldExpression>
+            </textField>
+
+            <rectangle>
+                <reportElement x="0" y="348" width="535" height="18" backcolor="#19559B" mode="Opaque" forecolor="#19559B"/>
+            </rectangle>
+            <staticText>
+                <reportElement x="6" y="350" width="200" height="14" forecolor="#FFFFFF" backcolor="#19559B" mode="Opaque"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="9" isBold="true"/></textElement>
+                <text><![CDATA[SUMMARY]]></text>
+            </staticText>
+
+        </band>
+
+        <band height="95">
+
+            <staticText>
+                <reportElement x="10" y="4" width="300" height="14" forecolor="#162239"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="8"/></textElement>
+                <text><![CDATA[Gross Income]]></text>
+            </staticText>
+            <textField pattern="₱#,##0.00" isBlankWhenNull="true">
+                <reportElement x="380" y="4" width="150" height="14" forecolor="#162239"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="SansSerif" size="8" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{GROSS_PAY}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="10" y="22" width="300" height="14" forecolor="#162239"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="8"/></textElement>
+                <text><![CDATA[Benefits]]></text>
+            </staticText>
+            <textField pattern="₱#,##0.00" isBlankWhenNull="true">
+                <reportElement x="380" y="22" width="150" height="14" forecolor="#162239"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="SansSerif" size="8" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{TOTAL_BENEFITS}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="10" y="40" width="300" height="14" forecolor="#162239"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="8"/></textElement>
+                <text><![CDATA[Deductions]]></text>
+            </staticText>
+            <textField pattern="₱#,##0.00" isBlankWhenNull="true">
+                <reportElement x="380" y="40" width="150" height="14" forecolor="#162239"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="SansSerif" size="8" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{TOTAL_DEDUCT}]]></textFieldExpression>
+            </textField>
+
+            <rectangle>
+                <reportElement x="0" y="58" width="535" height="22" backcolor="#DCE6F5" mode="Opaque" forecolor="#D2DAE8"/>
+            </rectangle>
+            <staticText>
+                <reportElement x="10" y="61" width="300" height="16" forecolor="#19559B"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="10" isBold="true"/></textElement>
+                <text><![CDATA[TAKE HOME PAY]]></text>
+            </staticText>
+            <textField pattern="₱#,##0.00" isBlankWhenNull="true">
+                <reportElement x="380" y="61" width="150" height="16" forecolor="#19559B"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="SansSerif" size="10" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{NET_PAY}]]></textFieldExpression>
+            </textField>
+
+        </band>
+    </detail>
+
+</jasperReport>

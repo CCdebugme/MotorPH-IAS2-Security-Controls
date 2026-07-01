@@ -4,6 +4,8 @@ import com.group33.cp2.motorph.model.Employee;
 import com.group33.cp2.motorph.model.HR;
 import com.group33.cp2.motorph.forms.EmployeeDashboard;
 import com.group33.cp2.motorph.model.LeaveRequest;
+import com.group33.cp2.motorph.report.ReportException;
+import com.group33.cp2.motorph.report.ReportService;
 import com.group33.cp2.motorph.service.EmployeeService;
 import com.group33.cp2.motorph.service.LeaveService;
 import com.group33.cp2.motorph.util.Constants;
@@ -16,10 +18,13 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
 import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -31,6 +36,7 @@ import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingWorker;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 
 // HR Dashboard — employee management and leave approval/rejection for HR roles.
@@ -54,6 +60,11 @@ public class HRDashboard extends JFrame {
     private JTable leaveTable;
     private DefaultTableModel leaveTableModel;
     private JTextField txtRemark;
+
+    // Tab 3 — Payroll Reports
+    private JComboBox<String> cmbDepartment;
+    private JComboBox<String> cmbPeriod;
+    private final ReportService reportService = new ReportService();
 
     // Column indices for leave table
     private static final int LEAVE_COL_ID       = 0;
@@ -100,6 +111,7 @@ public class HRDashboard extends JFrame {
         JTabbedPane tabs = new JTabbedPane();
         tabs.addTab("Employee Management", buildEmployeeTab());
         tabs.addTab("Leave Management", buildLeaveTab());
+        tabs.addTab("Payroll Reports", buildPayrollReportsTab());
         tabs.setBackground(new Color(247, 243, 238));
         tabs.setForeground(new Color(67, 50, 24));
         tabs.setFont(new Font("Noto Sans", Font.BOLD, 13));
@@ -361,6 +373,173 @@ public class HRDashboard extends JFrame {
         panel.add(topBar, BorderLayout.NORTH);
         panel.add(tableCard, BorderLayout.CENTER);
         return panel;
+    }
+
+    //  Tab 3: Payroll Reports
+    private JPanel buildPayrollReportsTab() {
+        JPanel panel = new JPanel(new BorderLayout(12, 12));
+        panel.setBackground(new Color(247, 243, 238));
+        panel.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
+
+        // ── Section title ──
+        JLabel sectionTitle = new JLabel("Payroll Report Generator");
+        sectionTitle.setFont(new Font("Noto Sans", Font.BOLD, 18));
+        sectionTitle.setForeground(new Color(66, 47, 24));
+
+        // ── Filter card ──
+        JPanel filterCard = new JPanel(new BorderLayout(0, 12));
+        filterCard.setBackground(Color.WHITE);
+        filterCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(209, 201, 193), 1),
+                BorderFactory.createEmptyBorder(16, 16, 16, 16)
+        ));
+
+        JLabel filterTitle = new JLabel("Report Filters");
+        filterTitle.setFont(new Font("Noto Sans", Font.BOLD, 14));
+        filterTitle.setForeground(new Color(88, 58, 21));
+
+        // Department combo
+        cmbDepartment = new JComboBox<>(new String[]{
+            "All Departments", "Executive", "Finance & Accounting",
+            "Human Resources", "IT", "Sales & Marketing"
+        });
+        UITheme.styleComboBox(cmbDepartment);
+        cmbDepartment.setPreferredSize(new Dimension(220, 36));
+
+        // Period combo — common payroll periods
+        cmbPeriod = new JComboBox<>(new String[]{
+            "All Periods",
+            "2026-01-01 to 2026-01-15", "2026-01-16 to 2026-01-31",
+            "2026-02-01 to 2026-02-15", "2026-02-16 to 2026-02-28",
+            "2026-03-01 to 2026-03-15", "2026-03-16 to 2026-03-31",
+            "2026-04-01 to 2026-04-15", "2026-04-16 to 2026-04-30",
+            "2026-05-01 to 2026-05-15", "2026-05-16 to 2026-05-31",
+            "2026-06-01 to 2026-06-15", "2026-06-16 to 2026-06-30"
+        });
+        UITheme.styleComboBox(cmbPeriod);
+        cmbPeriod.setPreferredSize(new Dimension(280, 36));
+
+        JPanel filterRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 16, 0));
+        filterRow.setOpaque(false);
+        filterRow.add(new JLabel("Department:"));
+        filterRow.add(cmbDepartment);
+        filterRow.add(new JLabel("Period:"));
+        filterRow.add(cmbPeriod);
+
+        filterCard.add(filterTitle, BorderLayout.NORTH);
+        filterCard.add(filterRow, BorderLayout.CENTER);
+
+        // ── Info card ──
+        JPanel infoCard = new JPanel(new BorderLayout(0, 8));
+        infoCard.setBackground(Color.WHITE);
+        infoCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(209, 201, 193), 1),
+                BorderFactory.createEmptyBorder(16, 16, 16, 16)
+        ));
+
+        JLabel infoTitle = new JLabel("Available Reports");
+        infoTitle.setFont(new Font("Noto Sans", Font.BOLD, 14));
+        infoTitle.setForeground(new Color(88, 58, 21));
+
+        JLabel infoText = new JLabel(
+            "<html>" +
+            "<b>Monthly Payroll Summary</b> — All employees with gross income, deductions (SSS, PhilHealth, " +
+            "Pag-IBIG, BIR), and net pay. Can be filtered by department.<br><br>" +
+            "Select your filters above, then click <b>Generate PDF</b> to export the report." +
+            "</html>"
+        );
+        infoText.setFont(new Font("Noto Sans", Font.PLAIN, 13));
+        infoText.setForeground(new Color(80, 68, 50));
+
+        infoCard.add(infoTitle, BorderLayout.NORTH);
+        infoCard.add(infoText, BorderLayout.CENTER);
+
+        // ── Generate button ──
+        JButton btnGenerate = new JButton("Generate PDF");
+        btnGenerate.setBackground(HR_ORANGE);
+        btnGenerate.setForeground(Color.WHITE);
+        btnGenerate.setFont(new Font("Noto Sans", Font.BOLD, 14));
+        btnGenerate.setFocusPainted(false);
+        btnGenerate.setOpaque(true);
+        btnGenerate.setPreferredSize(new Dimension(180, 48));
+        btnGenerate.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(HR_ORANGE_DARK, 1, true),
+                BorderFactory.createEmptyBorder(10, 20, 10, 20)
+        ));
+        btnGenerate.addActionListener(e -> handleGeneratePayrollReport());
+
+        JPanel buttonRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        buttonRow.setOpaque(false);
+        buttonRow.add(btnGenerate);
+
+        // ── Assemble ──
+        JPanel centerStack = new JPanel();
+        centerStack.setOpaque(false);
+        centerStack.setLayout(new javax.swing.BoxLayout(centerStack, javax.swing.BoxLayout.Y_AXIS));
+        centerStack.add(filterCard);
+        centerStack.add(javax.swing.Box.createVerticalStrut(12));
+        centerStack.add(infoCard);
+        centerStack.add(javax.swing.Box.createVerticalStrut(16));
+        centerStack.add(buttonRow);
+
+        JPanel topBar = new JPanel(new BorderLayout(0, 10));
+        topBar.setOpaque(false);
+        topBar.add(sectionTitle, BorderLayout.NORTH);
+
+        panel.add(topBar, BorderLayout.NORTH);
+        panel.add(centerStack, BorderLayout.CENTER);
+        return panel;
+    }
+
+    // Handles the Generate PDF button — asks user where to save, then calls ReportService.
+    private void handleGeneratePayrollReport() {
+        String dept   = (String) cmbDepartment.getSelectedItem();
+        String period = (String) cmbPeriod.getSelectedItem();
+
+        String deptFilter   = "All Departments".equals(dept)   ? null : dept;
+        String periodFilter = "All Periods".equals(period)     ? null : period;
+
+        // Ask user where to save the PDF
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Save Payroll Report PDF");
+        chooser.setFileFilter(new FileNameExtensionFilter("PDF Files (*.pdf)", "pdf"));
+        String suggestedName = "PayrollReport_" +
+                (deptFilter != null ? deptFilter.replace(" ", "_") : "All") + ".pdf";
+        chooser.setSelectedFile(new File(suggestedName));
+
+        int result = chooser.showSaveDialog(this);
+        if (result != JFileChooser.APPROVE_OPTION) return;
+
+        File outputFile = chooser.getSelectedFile();
+        if (!outputFile.getName().toLowerCase().endsWith(".pdf")) {
+            outputFile = new File(outputFile.getAbsolutePath() + ".pdf");
+        }
+
+        // Run in background to avoid freezing the UI
+        final File finalOutput = outputFile;
+        new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                reportService.generatePayrollReport(
+                        hrUser.getEmployeeID(), deptFilter, periodFilter, finalOutput);
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    get();
+                    JOptionPane.showMessageDialog(HRDashboard.this,
+                            "Report saved to:\n" + finalOutput.getAbsolutePath(),
+                            "Report Generated", JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception ex) {
+                    String msg = ex.getCause() != null ? ex.getCause().getMessage() : ex.getMessage();
+                    JOptionPane.showMessageDialog(HRDashboard.this,
+                            "Failed to generate report:\n" + msg,
+                            "Report Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }.execute();
     }
 
     private void styleButton(JButton button, boolean primary) {

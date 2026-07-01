@@ -41,7 +41,7 @@ import javax.swing.SwingWorker;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
-// Admin Dashboard — employee management and system reports for Admin roles.
+
 public class AdminDashboard extends JFrame {
 
     private static final Color ADMIN_YELLOW = new Color(214, 172, 34);

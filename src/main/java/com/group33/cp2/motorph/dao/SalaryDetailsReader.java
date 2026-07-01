@@ -6,8 +6,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-// Owns read/write access to salary table.
-// No CSV access remains — all data comes from MySQL via JDBC.
+
 public class SalaryDetailsReader {
 
     public Salary getSalary(String empId) {

@@ -6,8 +6,8 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-// Owns read/write access to allowance table.
-// No CSV access remains — all data comes from MySQL via JDBC.
+// owns read/write access to allowance table.
+// no CSV access remains  all data comes from MySQL via JDBC.
 public class AllowanceDetailsReader {
 
     public Allowance getAllowance(String empId) {

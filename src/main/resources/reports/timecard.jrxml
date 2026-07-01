@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports
+                                  http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="timecard"
+              pageWidth="595"
+              pageHeight="842"
+              columnWidth="535"
+              leftMargin="30"
+              rightMargin="30"
+              topMargin="20"
+              bottomMargin="20"
+              uuid="a1b2c3d4-0003-0003-0003-000000000003">
+
+    <parameter name="EMPLOYEE_ID"   class="java.lang.String"/>
+    <parameter name="EMPLOYEE_NAME" class="java.lang.String"/>
+    <parameter name="POSITION"      class="java.lang.String"/>
+    <parameter name="DEPARTMENT"    class="java.lang.String"/>
+    <parameter name="PERIOD_END"    class="java.lang.String"/>
+
+    <queryString><![CDATA[]]></queryString>
+
+    <field name="date" class="java.lang.String"/>
+    <field name="day" class="java.lang.String"/>
+    <field name="timeIn" class="java.lang.String"/>
+    <field name="breakOut" class="java.lang.String"/> <field name="breakIn" class="java.lang.String"/>  <field name="timeOut" class="java.lang.String"/>
+    <field name="totalHours" class="java.lang.Double"/>
+    <field name="remarks" class="java.lang.String"/>
+
+    <variable name="TOTAL_HOURS" class="java.lang.Double" calculation="Sum">
+    <variableExpression><![CDATA[$F{totalHours}]]></variableExpression>
+    </variable>
+
+    <title>
+        <band height="115">
+            <image scaleImage="RetainShape" hAlign="Left" vAlign="Middle">
+                <reportElement x="0" y="0" width="90" height="75"/>
+                <imageExpression><![CDATA[getClass().getResource("/images/MTPH.png")]]></imageExpression>
+            </image>
+
+            <staticText>
+                <reportElement x="100" y="5" width="300" height="28" forecolor="#19559B"/>
+                <textElement verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="22" isBold="true"/>
+                </textElement>
+                <text><![CDATA[MotorPH]]></text>
+            </staticText>
+
+            <staticText>
+                <reportElement x="100" y="33" width="420" height="12" forecolor="#646E8C"/>
+                <textElement><font fontName="SansSerif" size="8"/></textElement>
+                <text><![CDATA[7 Jupiter Avenue cor. F. Sandoval Jr., Bagong Nayon, Quezon City]]></text>
+            </staticText>
+
+            <staticText>
+                <reportElement x="100" y="46" width="420" height="12" forecolor="#646E8C"/>
+                <textElement><font fontName="SansSerif" size="8"/></textElement>
+                <text><![CDATA[Phone: (028) 911-5071 / (028) 911-5072 / (028) 911-5073]]></text>
+            </staticText>
+
+            <staticText>
+                <reportElement x="100" y="59" width="300" height="12" forecolor="#646E8C"/>
+                <textElement><font fontName="SansSerif" size="8"/></textElement>
+                <text><![CDATA[Email: corporate@motorph.com]]></text>
+            </staticText>
+
+            <line>
+                <reportElement x="0" y="82" width="535" height="1" forecolor="#D2DAE8"/>
+            </line>
+
+            <staticText>
+                <reportElement x="0" y="90" width="535" height="20" forecolor="#19559B"/>
+                <textElement textAlignment="Center">
+                    <font fontName="SansSerif" size="13" isBold="true" isUnderline="true"/>
+                </textElement>
+                <text><![CDATA[EMPLOYEE TIMECARD]]></text>
+            </staticText>
+        </band>
+    </title>
+
+    <pageHeader>
+        <band height="44">
+            <rectangle>
+                <reportElement x="0" y="2" width="535" height="38" backcolor="#FFFFFF" mode="Opaque" forecolor="#D2DAE8"/>
+            </rectangle>
+
+            <line><reportElement x="0"   y="21" width="535" height="1" forecolor="#D2DAE8"/></line>
+            <line><reportElement x="133" y="2"  width="1"   height="38" forecolor="#D2DAE8"/></line>
+            <line><reportElement x="268" y="2"  width="1"   height="38" forecolor="#D2DAE8"/></line>
+            <line><reportElement x="401" y="2"  width="1"   height="38" forecolor="#D2DAE8"/></line>
+
+            <staticText>
+                <reportElement x="4" y="4" width="128" height="16" backcolor="#DCE6F5" mode="Opaque" forecolor="#19559B"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="7" isBold="true"/></textElement>
+                <text><![CDATA[EMPLOYEE ID]]></text>
+            </staticText>
+            <textField isBlankWhenNull="true">
+                <reportElement x="136" y="4" width="130" height="16" forecolor="#162239"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="8" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{EMPLOYEE_ID}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="272" y="4" width="128" height="16" backcolor="#DCE6F5" mode="Opaque" forecolor="#19559B"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="7" isBold="true"/></textElement>
+                <text><![CDATA[PERIOD END DATE]]></text>
+            </staticText>
+            <textField isBlankWhenNull="true">
+                <reportElement x="404" y="4" width="128" height="16" forecolor="#162239"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="8" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{PERIOD_END}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="4" y="23" width="128" height="16" backcolor="#DCE6F5" mode="Opaque" forecolor="#19559B"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="7" isBold="true"/></textElement>
+                <text><![CDATA[EMPLOYEE NAME]]></text>
+            </staticText>
+            <textField isBlankWhenNull="true">
+                <reportElement x="136" y="23" width="130" height="16" forecolor="#162239"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="8" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{EMPLOYEE_NAME}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="272" y="23" width="128" height="16" backcolor="#DCE6F5" mode="Opaque" forecolor="#19559B"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="7" isBold="true"/></textElement>
+                <text><![CDATA[EMPLOYEE POSITION/DEPARTMENT]]></text>
+            </staticText>
+            <textField isBlankWhenNull="true">
+                <reportElement x="404" y="23" width="128" height="16" forecolor="#162239"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="8" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{POSITION} + " / " + $P{DEPARTMENT}]]></textFieldExpression>
+            </textField>
+        </band>
+    </pageHeader>
+
+    <columnHeader>
+        <band height="20">
+            <rectangle>
+                <reportElement x="0" y="0" width="535" height="20" backcolor="#19559B" mode="Opaque"/>
+            </rectangle>
+            <staticText><reportElement x="0"   y="3" width="55"  height="15" forecolor="#FFFFFF"/><textElement><font size="7" isBold="true"/></textElement><text><![CDATA[Date]]></text></staticText>
+            <staticText><reportElement x="55"  y="3" width="35"  height="15" forecolor="#FFFFFF"/><textElement><font size="7" isBold="true"/></textElement><text><![CDATA[Day]]></text></staticText>
+            <staticText><reportElement x="90"  y="3" width="50"  height="15" forecolor="#FFFFFF"/><textElement><font size="7" isBold="true"/></textElement><text><![CDATA[Time In]]></text></staticText>
+            <staticText><reportElement x="140" y="3" width="50"  height="15" forecolor="#FFFFFF"/><textElement><font size="7" isBold="true"/></textElement><text><![CDATA[Break Out]]></text></staticText>
+            <staticText><reportElement x="190" y="3" width="50"  height="15" forecolor="#FFFFFF"/><textElement><font size="7" isBold="true"/></textElement><text><![CDATA[Break In]]></text></staticText>
+            <staticText><reportElement x="240" y="3" width="50"  height="15" forecolor="#FFFFFF"/><textElement><font size="7" isBold="true"/></textElement><text><![CDATA[Time Out]]></text></staticText>
+            <staticText><reportElement x="290" y="3" width="65"  height="15" forecolor="#FFFFFF"/><textElement><font size="7" isBold="true"/></textElement><text><![CDATA[Total Hrs]]></text></staticText>
+            <staticText><reportElement x="355" y="3" width="180" height="15" forecolor="#FFFFFF"/><textElement><font size="7" isBold="true"/></textElement><text><![CDATA[Remarks]]></text></staticText>
+        </band>
+    </columnHeader>
+
+    <detail>
+        <band height="14">
+            <textField><reportElement x="0"   y="0" width="55"  height="14"/><textElement><font size="7"/></textElement><textFieldExpression><![CDATA[$F{date}]]></textFieldExpression></textField>
+            <textField><reportElement x="55"  y="0" width="35"  height="14"/><textElement><font size="7"/></textElement><textFieldExpression><![CDATA[$F{day}]]></textFieldExpression></textField>
+            <textField><reportElement x="90"  y="0" width="50"  height="14"/><textElement><font size="7"/></textElement><textFieldExpression><![CDATA[$F{timeIn}]]></textFieldExpression></textField>
+            <textField><reportElement x="140" y="0" width="50"  height="14"/><textElement><font size="7"/></textElement><textFieldExpression><![CDATA[$F{breakOut}]]></textFieldExpression></textField>
+            <textField><reportElement x="190" y="0" width="50"  height="14"/><textElement><font size="7"/></textElement><textFieldExpression><![CDATA[$F{breakIn}]]></textFieldExpression></textField>
+            <textField><reportElement x="240" y="0" width="50"  height="14"/><textElement><font size="7"/></textElement><textFieldExpression><![CDATA[$F{timeOut}]]></textFieldExpression></textField>
+            <textField>
+    <reportElement x="290" y="0" width="65" height="14"/>
+    <textElement><font size="7"/></textElement>
+    <textFieldExpression><![CDATA[
+        String.format("%.2f hrs", $F{totalHours})
+    ]]></textFieldExpression>
+</textField>
+            <textField><reportElement x="355" y="0" width="180" height="14"/><textElement><font size="7"/></textElement><textFieldExpression><![CDATA[$F{remarks}]]></textFieldExpression></textField>
+        </band>
+    </detail>
+
+    <summary>
+        <band height="26">
+            <rectangle>
+                <reportElement x="0" y="4" width="535" height="18" backcolor="#DCE6F5" mode="Opaque" forecolor="#D2DAE8"/>
+            </rectangle>
+
+            <staticText>
+                <reportElement x="10" y="6" width="300" height="14" forecolor="#19559B"/>
+                <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="9" isBold="true"/></textElement>
+                <text><![CDATA[TOTAL HOURS WORKED THIS PERIOD]]></text>
+            </staticText>
+
+            <textField evaluationTime="Report">
+                <reportElement x="405" y="6" width="120" height="14" forecolor="#19559B"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="9" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$V{TOTAL_HOURS} + " hrs"]]></textFieldExpression>
+            </textField>
+        </band>
+    </summary>
+</jasperReport>

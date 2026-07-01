@@ -1,0 +1,393 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports
+                                  http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="payroll_department"
+              pageWidth="1008"
+              pageHeight="612"
+              orientation="Landscape"
+              columnWidth="948"
+              leftMargin="30"
+              rightMargin="30"
+              topMargin="20"
+              bottomMargin="20"
+              uuid="a1b2c3d4-0002-0002-0002-000000000002">
+
+    <!--
+        NOTE: No SQL queryString here. This report is filled with a
+        custom JRDataSource (ReportDataSource) built from
+        ReportService.generateDepartmentReport(...), which sources every
+        Gross Income / SSS / PhilHealth / Pag-ibig / BIR / Net Pay value
+        from the existing PayrollService computation. Jasper only renders
+        these already-computed numbers — no payroll math is duplicated
+        here, satisfying 2.6.4. Per 2.6.5, this report is only reachable
+        by HR-role users in the controller layer; employees are routed to
+        the payslip report instead.
+    -->
+
+    <!-- PARAMETERS -->
+    <parameter name="DEPARTMENT" class="java.lang.String"/>
+    <parameter name="PERIOD" class="java.lang.String"/>
+    <parameter name="GENERATED_BY" class="java.lang.String"/>
+    <parameter name="GENERATED_DATE" class="java.lang.String"/>
+
+    <queryString><![CDATA[]]></queryString>
+
+    <!-- FIELDS -->
+    <field name="empNo" class="java.lang.String"/>
+    <field name="empName" class="java.lang.String"/>
+    <field name="position" class="java.lang.String"/>
+    <field name="department" class="java.lang.String"/>
+    <field name="grossIncome" class="java.lang.Double"/>
+    <field name="sssNo" class="java.lang.String"/>
+    <field name="sssContribution" class="java.lang.Double"/>
+    <field name="philhealthNo" class="java.lang.String"/>
+    <field name="philhealthContribution" class="java.lang.Double"/>
+    <field name="pagibigNo" class="java.lang.String"/>
+    <field name="pagibigContribution" class="java.lang.Double"/>
+    <field name="tin" class="java.lang.String"/>
+    <field name="withholdingTax" class="java.lang.Double"/>
+    <field name="netPay" class="java.lang.Double"/>
+
+    <!-- VARIABLES -->
+    <variable name="TOTAL_GROSS" class="java.lang.Double" calculation="Sum">
+        <variableExpression><![CDATA[$F{grossIncome}]]></variableExpression>
+    </variable>
+    <variable name="TOTAL_SSS" class="java.lang.Double" calculation="Sum">
+        <variableExpression><![CDATA[$F{sssContribution}]]></variableExpression>
+    </variable>
+    <variable name="TOTAL_PHILHEALTH" class="java.lang.Double" calculation="Sum">
+        <variableExpression><![CDATA[$F{philhealthContribution}]]></variableExpression>
+    </variable>
+    <variable name="TOTAL_PAGIBIG" class="java.lang.Double" calculation="Sum">
+        <variableExpression><![CDATA[$F{pagibigContribution}]]></variableExpression>
+    </variable>
+    <variable name="TOTAL_TAX" class="java.lang.Double" calculation="Sum">
+        <variableExpression><![CDATA[$F{withholdingTax}]]></variableExpression>
+    </variable>
+    <variable name="TOTAL_NET" class="java.lang.Double" calculation="Sum">
+        <variableExpression><![CDATA[$F{netPay}]]></variableExpression>
+    </variable>
+
+    <!-- TITLE -->
+    <title>
+        <band height="108">
+
+            <image scaleImage="RetainShape" hAlign="Left" vAlign="Middle">
+                <reportElement x="0" y="0" width="90" height="75"/>
+                <imageExpression><![CDATA[getClass().getResource("/images/MTPH.png")]]></imageExpression>
+            </image>
+
+            <staticText>
+                <reportElement x="100" y="5" width="300" height="28" forecolor="#19559B"/>
+                <textElement verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="22" isBold="true"/>
+                </textElement>
+                <text><![CDATA[MotorPH]]></text>
+            </staticText>
+
+            <staticText>
+                <reportElement x="100" y="33" width="500" height="12" forecolor="#646E8C"/>
+                <textElement verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="8"/>
+                </textElement>
+                <text><![CDATA[7 Jupiter Avenue cor. F. Sandoval Jr., Bagong Nayon, Quezon City]]></text>
+            </staticText>
+
+            <staticText>
+                <reportElement x="100" y="46" width="500" height="12" forecolor="#646E8C"/>
+                <textElement verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="8"/>
+                </textElement>
+                <text><![CDATA[Phone: (028) 911-5071 / (028) 911-5072 / (028) 911-5073]]></text>
+            </staticText>
+
+            <staticText>
+                <reportElement x="100" y="59" width="500" height="12" forecolor="#646E8C"/>
+                <textElement verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="8"/>
+                </textElement>
+                <text><![CDATA[Email: corporate@motorph.com]]></text>
+            </staticText>
+
+            <line>
+                <reportElement x="0" y="82" width="948" height="1" forecolor="#D2DAE8"/>
+            </line>
+
+            <staticText>
+                <reportElement x="0" y="88" width="948" height="16" forecolor="#19559B"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="12" isBold="true"/>
+                </textElement>
+                <text><![CDATA[MONTHLY PAYROLL SUMMARY REPORT]]></text>
+            </staticText>
+
+        </band>
+    </title>
+
+    <!-- PAGE HEADER -->
+    <pageHeader>
+        <band height="35">
+
+            <staticText>
+                <reportElement x="0" y="0" width="100" height="15"/>
+                <text><![CDATA[DEPARTMENT]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="100" y="0" width="200" height="15"/>
+                <textFieldExpression><![CDATA[$P{DEPARTMENT}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="320" y="0" width="80" height="15"/>
+                <text><![CDATA[PERIOD]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="400" y="0" width="200" height="15"/>
+                <textFieldExpression><![CDATA[$P{PERIOD}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="0" y="18" width="100" height="15"/>
+                <text><![CDATA[GENERATED BY]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="100" y="18" width="200" height="15"/>
+                <textFieldExpression><![CDATA[$P{GENERATED_BY}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="320" y="18" width="80" height="15"/>
+                <text><![CDATA[DATE]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="400" y="18" width="200" height="15"/>
+                <textFieldExpression><![CDATA[$P{GENERATED_DATE}]]></textFieldExpression>
+            </textField>
+
+        </band>
+    </pageHeader>
+
+    <!-- COLUMN HEADER (two rows: group label + sub-label) -->
+    <columnHeader>
+        <band height="32">
+
+            <rectangle>
+                <reportElement x="0" y="0" width="948" height="32" backcolor="#19559B" mode="Opaque"/>
+            </rectangle>
+
+            <!-- Single-row-span columns (full 32px height) -->
+            <staticText>
+                <reportElement x="0" y="0" width="35" height="32" forecolor="#FFFFFF"/>
+                <textElement verticalAlignment="Middle"><font size="6" isBold="true"/></textElement>
+                <text><![CDATA[EMP NO]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="35" y="0" width="105" height="32" forecolor="#FFFFFF"/>
+                <textElement verticalAlignment="Middle"><font size="6" isBold="true"/></textElement>
+                <text><![CDATA[EMPLOYEE FULL NAME]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="140" y="0" width="85" height="32" forecolor="#FFFFFF"/>
+                <textElement verticalAlignment="Middle"><font size="6" isBold="true"/></textElement>
+                <text><![CDATA[POSITION]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="225" y="0" width="75" height="32" forecolor="#FFFFFF"/>
+                <textElement verticalAlignment="Middle"><font size="6" isBold="true"/></textElement>
+                <text><![CDATA[DEPARTMENT]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="300" y="0" width="70" height="32" forecolor="#FFFFFF"/>
+                <textElement verticalAlignment="Middle"><font size="6" isBold="true"/></textElement>
+                <text><![CDATA[GROSS INCOME]]></text>
+            </staticText>
+
+<!-- NET PAY -->
+<staticText>
+    <reportElement x="895" y="0" width="53" height="32" forecolor="#FFFFFF"/>
+    <textElement textAlignment="Center" verticalAlignment="Middle">
+        <font size="6" isBold="true"/>
+    </textElement>
+    <text><![CDATA[NET PAY]]></text>
+</staticText>
+
+            <!-- Group labels (top row, span 2 sub-columns each) -->
+            <staticText>
+                <reportElement x="370" y="0" width="130" height="16" forecolor="#FFFFFF"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font size="6" isBold="true"/></textElement>
+                <text><![CDATA[SOCIAL SECURITY SYSTEM]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="500" y="0" width="135" height="16" forecolor="#FFFFFF"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font size="6" isBold="true"/></textElement>
+                <text><![CDATA[PHILHEALTH]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="635" y="0" width="130" height="16" forecolor="#FFFFFF"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font size="6" isBold="true"/></textElement>
+                <text><![CDATA[PAG-IBIG]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="765" y="0" width="130" height="16" forecolor="#FFFFFF"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font size="6" isBold="true"/></textElement>
+                <text><![CDATA[BIR]]></text>
+            </staticText>
+
+            <!-- Divider between group row and sub-label row -->
+            <line>
+    <reportElement x="370" y="16" width="525" height="1" forecolor="#D2DAE8"/>
+</line>
+
+            <!-- Sub-labels (bottom row) -->
+            <staticText>
+                <reportElement x="370" y="17" width="70" height="15" forecolor="#FFFFFF"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font size="6"/></textElement>
+                <text><![CDATA[SSS No.]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="440" y="17" width="60" height="15" forecolor="#FFFFFF"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font size="6"/></textElement>
+                <text><![CDATA[Contribution]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="500" y="17" width="70" height="15" forecolor="#FFFFFF"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font size="6"/></textElement>
+                <text><![CDATA[PhilHealth No.]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="570" y="17" width="65" height="15" forecolor="#FFFFFF"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font size="6"/></textElement>
+                <text><![CDATA[Contribution]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="635" y="17" width="70" height="15" forecolor="#FFFFFF"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font size="6"/></textElement>
+                <text><![CDATA[Pag-ibig No.]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="705" y="17" width="60" height="15" forecolor="#FFFFFF"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font size="6"/></textElement>
+                <text><![CDATA[Contribution]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="765" y="17" width="70" height="15" forecolor="#FFFFFF"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font size="6"/></textElement>
+                <text><![CDATA[TIN]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="835" y="17" width="60" height="15" forecolor="#FFFFFF"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font size="6"/></textElement>
+                <text><![CDATA[Withholding Tax]]></text>
+            </staticText>
+
+        </band>
+    </columnHeader>
+
+    <!-- DETAIL -->
+    <detail>
+        <band height="18">
+
+            <textField><reportElement x="0" y="2" width="35" height="14"/><textElement><font size="6"/></textElement><textFieldExpression><![CDATA[$F{empNo}]]></textFieldExpression></textField>
+            <textField><reportElement x="35" y="2" width="105" height="14"/><textElement><font size="6"/></textElement><textFieldExpression><![CDATA[$F{empName}]]></textFieldExpression></textField>
+            <textField><reportElement x="140" y="2" width="85" height="14"/><textElement><font size="6"/></textElement><textFieldExpression><![CDATA[$F{position}]]></textFieldExpression></textField>
+            <textField><reportElement x="225" y="2" width="75" height="14"/><textElement><font size="6"/></textElement><textFieldExpression><![CDATA[$F{department}]]></textFieldExpression></textField>
+
+            <textField pattern="#,##0.00">
+                <reportElement x="300" y="2" width="70" height="14"/>
+                <textElement textAlignment="Right"><font size="6"/></textElement>
+                <textFieldExpression><![CDATA[$F{grossIncome}]]></textFieldExpression>
+            </textField>
+
+            <textField><reportElement x="370" y="2" width="70" height="14"/><textElement textAlignment="Center"><font size="6"/></textElement><textFieldExpression><![CDATA[$F{sssNo}]]></textFieldExpression></textField>
+            <textField pattern="#,##0.00">
+                <reportElement x="440" y="2" width="60" height="14"/>
+                <textElement textAlignment="Right"><font size="6"/></textElement>
+                <textFieldExpression><![CDATA[$F{sssContribution}]]></textFieldExpression>
+            </textField>
+
+            <textField><reportElement x="500" y="2" width="70" height="14"/><textElement textAlignment="Center"><font size="6"/></textElement><textFieldExpression><![CDATA[$F{philhealthNo}]]></textFieldExpression></textField>
+            <textField pattern="#,##0.00">
+                <reportElement x="570" y="2" width="65" height="14"/>
+                <textElement textAlignment="Right"><font size="6"/></textElement>
+                <textFieldExpression><![CDATA[$F{philhealthContribution}]]></textFieldExpression>
+            </textField>
+
+            <textField><reportElement x="635" y="2" width="70" height="14"/><textElement textAlignment="Center"><font size="6"/></textElement><textFieldExpression><![CDATA[$F{pagibigNo}]]></textFieldExpression></textField>
+            <textField pattern="#,##0.00">
+                <reportElement x="705" y="2" width="60" height="14"/>
+                <textElement textAlignment="Right"><font size="6"/></textElement>
+                <textFieldExpression><![CDATA[$F{pagibigContribution}]]></textFieldExpression>
+            </textField>
+
+            <textField><reportElement x="765" y="2" width="70" height="14"/><textElement textAlignment="Center"><font size="6"/></textElement><textFieldExpression><![CDATA[$F{tin}]]></textFieldExpression></textField>
+            <textField pattern="#,##0.00">
+                <reportElement x="835" y="2" width="60" height="14"/>
+                <textElement textAlignment="Right"><font size="6"/></textElement>
+                <textFieldExpression><![CDATA[$F{withholdingTax}]]></textFieldExpression>
+            </textField>
+
+            <textField pattern="#,##0.00">
+                <reportElement x="895" y="2" width="53" height="14"/>
+                <textElement textAlignment="Right"><font size="6" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$F{netPay}]]></textFieldExpression>
+            </textField>
+
+        </band>
+    </detail>
+
+    <!-- SUMMARY -->
+    <summary>
+        <band height="26">
+
+            <rectangle>
+                <reportElement x="0" y="4" width="948" height="18" backcolor="#DCE6F5" mode="Opaque" forecolor="#D2DAE8"/>
+            </rectangle>
+
+            <staticText>
+                <reportElement x="140" y="6" width="85" height="14" forecolor="#19559B"/>
+                <textElement verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+                <text><![CDATA[TOTAL]]></text>
+            </staticText>
+
+            <textField pattern="#,##0.00">
+                <reportElement x="300" y="6" width="70" height="14" forecolor="#19559B"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$V{TOTAL_GROSS}]]></textFieldExpression>
+            </textField>
+
+            <textField pattern="#,##0.00">
+                <reportElement x="440" y="6" width="60" height="14" forecolor="#19559B"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$V{TOTAL_SSS}]]></textFieldExpression>
+            </textField>
+
+            <textField pattern="#,##0.00">
+                <reportElement x="570" y="6" width="65" height="14" forecolor="#19559B"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$V{TOTAL_PHILHEALTH}]]></textFieldExpression>
+            </textField>
+
+            <textField pattern="#,##0.00">
+                <reportElement x="705" y="6" width="60" height="14" forecolor="#19559B"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$V{TOTAL_PAGIBIG}]]></textFieldExpression>
+            </textField>
+
+            <textField pattern="#,##0.00">
+                <reportElement x="835" y="6" width="60" height="14" forecolor="#19559B"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$V{TOTAL_TAX}]]></textFieldExpression>
+            </textField>
+
+            <textField pattern="#,##0.00">
+                <reportElement x="895" y="6" width="53" height="14" forecolor="#19559B"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$V{TOTAL_NET}]]></textFieldExpression>
+            </textField>
+
+        </band>
+    </summary>
+
+</jasperReport>

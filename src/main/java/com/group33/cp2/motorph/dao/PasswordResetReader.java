@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-// Owns read/write access to password_reset_requests table.
+// owns read/write access to password_reset_requests table.
 // No CSV access remains — all data comes from MySQL via JDBC.
 public class PasswordResetReader {
 
