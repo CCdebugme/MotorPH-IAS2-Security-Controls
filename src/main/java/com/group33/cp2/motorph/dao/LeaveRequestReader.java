@@ -1,125 +1,155 @@
 package com.group33.cp2.motorph.dao;
 
 import com.group33.cp2.motorph.model.LeaveRequest;
-import com.opencsv.CSVReader;
-import com.opencsv.CSVWriter;
-import com.opencsv.exceptions.CsvValidationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-// leaveRequests.csv. No other class opens this file directly.
-public class LeaveRequestReader {
+/**
+ * Owns all read/write access to the leave_requests table.
+ * No CSV access remains — all data comes from MySQL via JDBC.
+ * Implements ILeaveRequestDAO to satisfy the DAO interface contract.
+ */
+public class LeaveRequestReader implements ILeaveRequestDAO {
 
-    private static final String FILE_PATH = "src/main/resources/data/LeaveRequests.csv";
+    private static final Logger log = LoggerFactory.getLogger(LeaveRequestReader.class);
 
-    private static List<String[]> readAll() throws IOException {
-        List<String[]> rows = new ArrayList<>();
-        try (CSVReader reader = new CSVReader(new FileReader(FILE_PATH))) {
-            String[] row;
-            while ((row = reader.readNext()) != null) {
-                rows.add(row);
-            }
-        } catch (CsvValidationException e) {
-            throw new IOException("CSV parse error in LeaveRequests.csv: " + e.getMessage(), e);
+    // ── ILeaveRequestDAO implementation ──────────────────────────────────────
+
+    /**
+     * Inserts a new leave request record into the database.
+     *
+     * @param leaveRequest the leave request to insert
+     * @throws SQLException if the insert fails
+     */
+    @Override
+    public void addLeaveRequest(LeaveRequest leaveRequest) throws SQLException {
+        String sql = "INSERT INTO leave_requests " +
+                     "(leaveID, empNum, leaveType, dateRequest, startDate, endDate, " +
+                     "reason, status, approver, dateResponded, remark) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1,  leaveRequest.getLeaveID());
+            stmt.setString(2,  leaveRequest.getEmployeeID());
+            stmt.setString(3,  leaveRequest.getLeaveType());
+            stmt.setString(4,  leaveRequest.getDateRequest().toString());
+            stmt.setString(5,  leaveRequest.getStartDate().toString());
+            stmt.setString(6,  leaveRequest.getEndDate().toString());
+            stmt.setString(7,  leaveRequest.getReason());
+            stmt.setString(8,  leaveRequest.getStatus());
+            stmt.setString(9,  leaveRequest.getApprover() != null ? leaveRequest.getApprover() : "");
+            stmt.setString(10, leaveRequest.getDateResponded() != null
+                               ? leaveRequest.getDateResponded().toString() : "");
+            stmt.setString(11, leaveRequest.getRemark() != null ? leaveRequest.getRemark() : "");
+            stmt.executeUpdate();
         }
-        return rows;
     }
 
-    private static void writeAll(List<String[]> rows) throws IOException {
-        try (CSVWriter writer = new CSVWriter(new FileWriter(FILE_PATH))) {
-            writer.writeAll(rows);
-        }
-    }
-
-    public static void addLeaveRequest(LeaveRequest leaveRequest) throws IOException {
-        List<String[]> data = readAll();
-        data.add(new String[]{
-            leaveRequest.getLeaveID(),
-            leaveRequest.getEmployeeID(),
-            leaveRequest.getLeaveType(),
-            leaveRequest.getDateRequest().toString(),
-            leaveRequest.getStartDate().toString(),
-            leaveRequest.getEndDate().toString(),
-            leaveRequest.getReason(),
-            leaveRequest.getStatus(),
-            leaveRequest.getApprover() != null ? leaveRequest.getApprover() : "",
-            leaveRequest.getDateResponded() != null ? leaveRequest.getDateResponded().toString() : "",
-            leaveRequest.getRemark() != null ? leaveRequest.getRemark() : ""
-        });
-        writeAll(data);
-    }
-
-    public static LeaveRequest getLeaveById(String leaveID) throws IOException {
-        List<String[]> dataList = readAll();
-        for (int i = 1; i < dataList.size(); i++) {
-            String[] data = dataList.get(i);
-            if (data.length > 0 && data[0].trim().equals(leaveID.trim())) {
-                return parseRow(data);
+    /**
+     * Returns a single leave request by leaveID, or null if no record is found.
+     *
+     * @param leaveID the unique leave request identifier
+     * @return matching LeaveRequest, or null
+     * @throws SQLException if the query fails
+     */
+    @Override
+    public LeaveRequest getLeaveById(String leaveID) throws SQLException {
+        String sql = "SELECT leaveID, empNum, leaveType, dateRequest, startDate, endDate, " +
+                     "reason, status, approver, dateResponded, remark " +
+                     "FROM leave_requests WHERE leaveID = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, leaveID.trim());
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) return mapRow(rs);
             }
         }
         return null;
     }
 
-    public static void updateLeaveRequest(LeaveRequest updatedLeave) throws IOException {
-        List<String[]> data = readAll();
-        for (int i = 1; i < data.size(); i++) {
-            if (data.get(i).length > 0 && data.get(i)[0].trim().equals(updatedLeave.getLeaveID().trim())) {
-                data.set(i, new String[]{
-                    updatedLeave.getLeaveID(),
-                    updatedLeave.getEmployeeID(),
-                    updatedLeave.getLeaveType(),
-                    updatedLeave.getDateRequest().toString(),
-                    updatedLeave.getStartDate().toString(),
-                    updatedLeave.getEndDate().toString(),
-                    updatedLeave.getReason(),
-                    updatedLeave.getStatus(),
-                    updatedLeave.getApprover() != null ? updatedLeave.getApprover() : "",
-                    updatedLeave.getDateResponded() != null ? updatedLeave.getDateResponded().toString() : "",
-                    updatedLeave.getRemark() != null ? updatedLeave.getRemark() : ""
-                });
-                break;
-            }
+    /**
+     * Updates an existing leave request record in the database.
+     *
+     * @param updatedLeave the leave request containing updated values
+     * @throws SQLException if the update fails
+     */
+    @Override
+    public void updateLeaveRequest(LeaveRequest updatedLeave) throws SQLException {
+        String sql = "UPDATE leave_requests SET empNum=?, leaveType=?, dateRequest=?, " +
+                     "startDate=?, endDate=?, reason=?, status=?, approver=?, " +
+                     "dateResponded=?, remark=? WHERE leaveID=?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1,  updatedLeave.getEmployeeID());
+            stmt.setString(2,  updatedLeave.getLeaveType());
+            stmt.setString(3,  updatedLeave.getDateRequest().toString());
+            stmt.setString(4,  updatedLeave.getStartDate().toString());
+            stmt.setString(5,  updatedLeave.getEndDate().toString());
+            stmt.setString(6,  updatedLeave.getReason());
+            stmt.setString(7,  updatedLeave.getStatus());
+            stmt.setString(8,  updatedLeave.getApprover() != null ? updatedLeave.getApprover() : "");
+            stmt.setString(9,  updatedLeave.getDateResponded() != null
+                               ? updatedLeave.getDateResponded().toString() : "");
+            stmt.setString(10, updatedLeave.getRemark() != null ? updatedLeave.getRemark() : "");
+            stmt.setString(11, updatedLeave.getLeaveID());
+            stmt.executeUpdate();
         }
-        writeAll(data);
     }
 
+    /**
+     * Returns all leave request records from the database.
+     * Logs a warning if any row cannot be parsed rather than crashing.
+     *
+     * @return list of all leave requests; empty list if none found or on error
+     */
+    @Override
     public List<LeaveRequest> getAllLeaveRequests() {
         List<LeaveRequest> leaveRequests = new ArrayList<>();
-        try {
-            List<String[]> dataList = readAll();
-            for (int i = 1; i < dataList.size(); i++) {
-                String[] data = dataList.get(i);
-                if (data.length >= 8) {
-                    leaveRequests.add(parseRow(data));
-                } else {
-                    System.err.println("LeaveRequestReader: skipping invalid row (too few columns): "
-                            + String.join(",", data));
+        String sql = "SELECT leaveID, empNum, leaveType, dateRequest, startDate, endDate, " +
+                     "reason, status, approver, dateResponded, remark FROM leave_requests";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                try {
+                    leaveRequests.add(mapRow(rs));
+                } catch (Exception e) {
+                    log.warn("LeaveRequestReader: skipping malformed row — {}", e.getMessage());
                 }
             }
-        } catch (IOException e) {
-            System.err.println("LeaveRequestReader.getAllLeaveRequests: " + e.getMessage());
+        } catch (SQLException e) {
+            log.error("LeaveRequestReader.getAllLeaveRequests failed: {}", e.getMessage(), e);
         }
         return leaveRequests;
     }
 
-    private static LeaveRequest parseRow(String[] data) {
+    // ── Private helper ────────────────────────────────────────────────────────
+
+    /**
+     * Maps a ResultSet row to a LeaveRequest model object.
+     * Date fields stored as VARCHAR are parsed to LocalDate where non-blank.
+     */
+    private LeaveRequest mapRow(ResultSet rs) throws SQLException {
+        String dateRespondedStr = rs.getString("dateResponded");
+        LocalDate dateResponded = (dateRespondedStr != null && !dateRespondedStr.isBlank())
+                                  ? LocalDate.parse(dateRespondedStr.trim()) : null;
         return new LeaveRequest(
-            data[0].trim(),
-            data[1].trim(),
-            data[2].trim(),
-            LocalDate.parse(data[3].trim()),
-            LocalDate.parse(data[4].trim()),
-            LocalDate.parse(data[5].trim()),
-            data[6].trim(),
-            data[7].trim(),
-            data.length > 8 && !data[8].isBlank() ? data[8].trim() : "",
-            data.length > 9 && !data[9].isBlank() ? LocalDate.parse(data[9].trim()) : null,
-            data.length > 10 ? data[10].trim() : ""
+            rs.getString("leaveID"),
+            rs.getString("empNum"),
+            rs.getString("leaveType"),
+            LocalDate.parse(rs.getString("dateRequest").trim()),
+            LocalDate.parse(rs.getString("startDate").trim()),
+            LocalDate.parse(rs.getString("endDate").trim()),
+            rs.getString("reason"),
+            rs.getString("status"),
+            rs.getString("approver") != null ? rs.getString("approver") : "",
+            dateResponded,
+            rs.getString("remark") != null ? rs.getString("remark") : ""
         );
     }
 }

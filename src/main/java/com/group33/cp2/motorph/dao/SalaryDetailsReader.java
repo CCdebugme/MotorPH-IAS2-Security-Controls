@@ -7,7 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 
-public class SalaryDetailsReader {
+public class SalaryDetailsReader implements ISalaryDAO {
 
     public Salary getSalary(String empId) {
         String sql = "SELECT basicSalary, hourlyRate, grossSMRate FROM salary WHERE employeeNum = ?";

@@ -8,7 +8,18 @@ import java.util.Map;
 
 // owns read/write access to allowance table.
 // no CSV access remains  all data comes from MySQL via JDBC.
-public class AllowanceDetailsReader {
+public class AllowanceDetailsReader implements IAllowanceDAO {
+    
+    public boolean allowanceExists(String empId) throws SQLException {
+    String sql = "SELECT COUNT(*) FROM allowance WHERE employeeNum = ?";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+        stmt.setString(1, empId.trim());
+        try (ResultSet rs = stmt.executeQuery()) {
+            return rs.next() && rs.getInt(1) > 0;
+        }
+    }
+}
 
     public Allowance getAllowance(String empId) {
         String sql = "SELECT employeeNum, riceSubsidy, phoneAllowance, clothingAllowance FROM allowance WHERE employeeNum = ?";

@@ -4,7 +4,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EmployeeDetailsReader {
+public class EmployeeDetailsReader implements IEmployeeDAO {
 
     public List<String[]> getAllEmployees() {
         List<String[]> result = new ArrayList<>();

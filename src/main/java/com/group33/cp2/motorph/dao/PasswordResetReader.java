@@ -1,17 +1,32 @@
 package com.group33.cp2.motorph.dao;
 
 import com.group33.cp2.motorph.model.PasswordResetRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-// owns read/write access to password_reset_requests table.
-// No CSV access remains — all data comes from MySQL via JDBC.
-public class PasswordResetReader {
+/**
+ * Owns all read/write access to the password_reset_requests table.
+ * No CSV access remains — all data comes from MySQL via JDBC.
+ * Implements IPasswordResetDAO to satisfy the DAO interface contract.
+ */
+public class PasswordResetReader implements IPasswordResetDAO {
 
-    public static void addRequest(PasswordResetRequest request) throws SQLException {
+    private static final Logger log = LoggerFactory.getLogger(PasswordResetReader.class);
+
+    /**
+     * Inserts a new password reset request record into the database.
+     *
+     * @param request the reset request to insert
+     * @throws SQLException if the insert fails
+     */
+    @Override
+    public void addRequest(PasswordResetRequest request) throws SQLException {
         String sql = "INSERT INTO password_reset_requests " +
                      "(empNum, empName, dateOfRequest, status, adminName, adminEmpNum, dateOfReset) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?)";
@@ -29,10 +44,18 @@ public class PasswordResetReader {
         }
     }
 
-    public static List<PasswordResetRequest> getAllRequests() {
+    /**
+     * Returns all password reset request records from the database.
+     * Logs an error if the query fails rather than propagating the exception,
+     * so the IT dashboard can still load even if this call fails.
+     *
+     * @return list of all requests; empty list on error
+     */
+    @Override
+    public List<PasswordResetRequest> getAllRequests() {
         List<PasswordResetRequest> list = new ArrayList<>();
-        String sql = "SELECT empNum, empName, dateOfRequest, status, adminName, adminEmpNum, dateOfReset " +
-                     "FROM password_reset_requests";
+        String sql = "SELECT empNum, empName, dateOfRequest, status, " +
+                     "adminName, adminEmpNum, dateOfReset FROM password_reset_requests";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
@@ -42,22 +65,32 @@ public class PasswordResetReader {
                     rs.getString("empName"),
                     rs.getString("dateOfRequest"),
                     rs.getString("status"),
-                    rs.getString("adminName")    != null ? rs.getString("adminName")    : "",
-                    rs.getString("adminEmpNum")  != null ? rs.getString("adminEmpNum")  : "",
-                    rs.getString("dateOfReset")  != null ? rs.getString("dateOfReset")  : ""
+                    rs.getString("adminName")   != null ? rs.getString("adminName")   : "",
+                    rs.getString("adminEmpNum") != null ? rs.getString("adminEmpNum") : "",
+                    rs.getString("dateOfReset") != null ? rs.getString("dateOfReset") : ""
                 ));
             }
         } catch (SQLException e) {
-            System.err.println("PasswordResetReader.getAllRequests: " + e.getMessage());
+            log.error("PasswordResetReader.getAllRequests failed: {}", e.getMessage(), e);
         }
         return list;
     }
 
-    public static boolean approveRequest(String employeeNumber, String adminName, String adminEmpNum)
+    /**
+     * Marks the most recent pending reset request for the employee as approved.
+     *
+     * @param employeeNumber the employee whose request is being approved
+     * @param adminName      full name of the IT admin approving the request
+     * @param adminEmpNum    employee number of the IT admin
+     * @return true if a pending record was found and updated
+     * @throws SQLException if the update fails
+     */
+    @Override
+    public boolean approveRequest(String employeeNumber, String adminName, String adminEmpNum)
             throws SQLException {
         String currentDate = new SimpleDateFormat("MM/dd/yyyy - hh:mm:ss a").format(new Date());
-        String sql = "UPDATE password_reset_requests SET status='Approved', adminName=?, " +
-                     "adminEmpNum=?, dateOfReset=? " +
+        String sql = "UPDATE password_reset_requests " +
+                     "SET status='Approved', adminName=?, adminEmpNum=?, dateOfReset=? " +
                      "WHERE empNum=? AND status='Pending'";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {

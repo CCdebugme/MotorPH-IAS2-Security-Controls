@@ -19,15 +19,17 @@ public class LeaveService {
 
     private final LeaveRequestReader leaveRequestReader;
     private final LeaveProcessor     leaveProcessor;
+    private final EmployeeLeaveTracker leaveTracker;
 
     public LeaveService() {
         this.leaveRequestReader = new LeaveRequestReader();
         this.leaveProcessor     = new LeaveProcessor();
+        this.leaveTracker = new EmployeeLeaveTracker();
     }
 
     // Returns the leave balance for the given employee and leave type.
     public int getLeaveBalance(String empId, String leaveType) throws IOException, SQLException {
-        return EmployeeLeaveTracker.getLeaveBalance(empId, leaveType);
+        return leaveTracker.getLeaveBalance(empId, leaveType);
     }
 
     // Returns all leave requests for the given employee.
@@ -53,7 +55,7 @@ public class LeaveService {
     // Returns true on success; false if the request is not found or is not Pending.
     // Called by HR.approveLeave() so the HR model class has no direct dao/ imports.
     public boolean approveLeave(String leaveId, String hrName, String remark) throws IOException, SQLException {
-        LeaveRequest request = LeaveRequestReader.getLeaveById(leaveId);
+        LeaveRequest request = leaveRequestReader.getLeaveById(leaveId);
         if (request == null || !"Pending".equalsIgnoreCase(request.getStatus())) {
             return false;
         }
@@ -61,7 +63,7 @@ public class LeaveService {
         if (remark != null && !remark.isBlank()) {
             request.setRemark(remark);
         }
-        LeaveRequestReader.updateLeaveRequest(request);
+        leaveRequestReader.updateLeaveRequest(request);
 
         boolean usesCalendarDays = "Sick Leave".equalsIgnoreCase(request.getLeaveType())
                 || "Vacation Leave".equalsIgnoreCase(request.getLeaveType())
@@ -69,7 +71,7 @@ public class LeaveService {
         int daysRequested = usesCalendarDays
                 ? calculateCalendarDays(request.getStartDate(), request.getEndDate())
                 : calculateWeekdays(request.getStartDate(), request.getEndDate());
-        EmployeeLeaveTracker.updateLeaveBalance(
+        leaveTracker.updateLeaveBalance(
                 request.getEmployeeID(), request.getLeaveType(), daysRequested);
         return true;
     }
@@ -78,12 +80,12 @@ public class LeaveService {
     // Returns true on success; false if the request is not found or is not Pending.
     // Called by HR.rejectLeave() so the HR model class has no direct dao/ imports.
     public boolean rejectLeave(String leaveId, String hrName, String remark) throws IOException, SQLException {
-        LeaveRequest request = LeaveRequestReader.getLeaveById(leaveId);
+        LeaveRequest request = leaveRequestReader.getLeaveById(leaveId);
         if (request == null || !"Pending".equalsIgnoreCase(request.getStatus())) {
             return false;
         }
         request.reject(hrName, remark);
-        LeaveRequestReader.updateLeaveRequest(request);
+        leaveRequestReader.updateLeaveRequest(request);
         return true;
     }
 

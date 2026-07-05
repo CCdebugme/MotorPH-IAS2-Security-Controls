@@ -10,7 +10,7 @@ import java.util.List;
 
 // owns read/write access to attendance table.
 // no CSV access remains  all data comes from MySQL via JDBC.
-public class AttendanceDAO {
+public class AttendanceDAO implements IAttendanceDAO {
 
     public List<Attendance> loadAllAttendance() throws SQLException {
         List<Attendance> result = new ArrayList<>();

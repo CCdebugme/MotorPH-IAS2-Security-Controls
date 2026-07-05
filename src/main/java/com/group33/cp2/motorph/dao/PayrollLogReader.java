@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class PayrollLogReader {
+public class PayrollLogReader implements IPayrollDAO {
 
     public boolean isAlreadyLogged(String empNum, int month, int year) throws SQLException {
         String sql = "SELECT COUNT(*) FROM payroll WHERE empNum=? AND month=? AND year=?";

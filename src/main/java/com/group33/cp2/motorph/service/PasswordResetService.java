@@ -18,9 +18,10 @@ public class PasswordResetService {
 
     private static final String SPECIAL_CHARS = "!@#$%^&*";
 
-    // Named employeeReader because it handles both Employee.csv (via isEmployeeValid)
-    // and Login.csv (via changeUserPassword) — EmployeeDetailsReader owns both files.
-    private final EmployeeDetailsReader employeeReader = new EmployeeDetailsReader();
+    // Named employeeReader because it handles both the employees table (via isEmployeeValid)
+    // and the login table (via changeUserPassword) — EmployeeDetailsReader owns both.
+    private final EmployeeDetailsReader employeeReader   = new EmployeeDetailsReader();
+    private final PasswordResetReader   passwordResetReader = new PasswordResetReader();
 
     // Resets the employee's password and marks the pending request as Approved.
     // Returns the plaintext temporary password so the caller can display it to IT staff.
@@ -36,7 +37,7 @@ public class PasswordResetService {
             throw new PasswordResetException("Employee not found in login data: " + employeeNumber);
         }
 
-        if (!PasswordResetReader.approveRequest(employeeNumber, adminName, adminEmpNum)) {
+        if (!passwordResetReader.approveRequest(employeeNumber, adminName, adminEmpNum)) {
             throw new PasswordResetException(
                     "Password reset request not found or already approved for: " + employeeNumber);
         }
@@ -48,7 +49,7 @@ public class PasswordResetService {
     // Returns all password reset requests from the CSV.
     // Delegates to PasswordResetReader so forms/ never import from dao/.
     public List<PasswordResetRequest> getAllRequests() {
-        return PasswordResetReader.getAllRequests();
+        return passwordResetReader.getAllRequests();
     }
 
     // Validates the employee (empNum + empName in "FirstName LastName" order) and submits
@@ -64,7 +65,7 @@ public class PasswordResetService {
 
         String dateOfRequest = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
         PasswordResetRequest request = new PasswordResetRequest(empNum, empName, dateOfRequest);
-        PasswordResetReader.addRequest(request);
+        passwordResetReader.addRequest(request);
     }
 
     // Generates a temporary password: "Default" + empNum + randomSpecialChar + twoRandomDigits

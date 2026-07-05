@@ -11,12 +11,15 @@ import java.time.LocalDate;
 import java.util.List;
 
 // Validates and submits leave requests: leave-type date rules, date-order check, weekend check,
-// balance verification, ID generation, and CSV write.
+// balance verification, ID generation, and DB write.
 // NOTE: Leave balance is NOT deducted on submission — only on HR approval (HR.approveLeave).
 public class LeaveProcessor {
 
+    private final LeaveRequestReader   leaveRequestReader = new LeaveRequestReader();
+    private final EmployeeLeaveTracker leaveTracker       = new EmployeeLeaveTracker();
+
     // Validates and submits a new leave request for the given employee.
-    // Throws IllegalArgumentException if any rule is violated; IOException on CSV failure.
+    // Throws IllegalArgumentException if any rule is violated; SQLException on DB failure.
     public void processLeaveRequest(String employeeId, String leaveType,
             LocalDate startDate, LocalDate endDate, String reason) throws IOException, SQLException {
 
@@ -56,7 +59,7 @@ public class LeaveProcessor {
         if (leaveDuration <= 0) {
             throw new IllegalArgumentException("Leave request must include at least one valid leave day.");
         }
-        int balance = EmployeeLeaveTracker.getLeaveBalance(employeeId, leaveType);
+        int balance = leaveTracker.getLeaveBalance(employeeId, leaveType);
         if (balance < leaveDuration) {
             throw new IllegalArgumentException("Insufficient leave balance.");
         }
@@ -66,7 +69,7 @@ public class LeaveProcessor {
         LeaveRequest leaveRequest = new LeaveRequest(
                 leaveId, employeeId, leaveType, LocalDate.now(),
                 startDate, endDate, reason, "Pending", "", null, "");
-        LeaveRequestReader.addLeaveRequest(leaveRequest);
+        leaveRequestReader.addLeaveRequest(leaveRequest);
     }
 
     // Counts only Monday–Friday days in the inclusive range [startDate, endDate].
@@ -91,7 +94,7 @@ public class LeaveProcessor {
 
     // Returns the next leave ID in L### format (e.g. L003 becomes L004; L001 if none exist).
     private String generateLeaveId() {
-        List<LeaveRequest> requests = new LeaveRequestReader().getAllLeaveRequests();
+        List<LeaveRequest> requests = leaveRequestReader.getAllLeaveRequests();
         int maxId = 0;
         for (LeaveRequest request : requests) {
             String idStr = request.getLeaveID().replace("L", "");
