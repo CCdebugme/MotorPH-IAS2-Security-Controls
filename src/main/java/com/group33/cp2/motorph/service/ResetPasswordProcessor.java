@@ -1,5 +1,7 @@
 package com.group33.cp2.motorph.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.sql.SQLException;
 
@@ -10,6 +12,8 @@ import java.sql.SQLException;
 // After calling resetPassword(), the caller should check isLastResetSuccessful() and
 // getLastResultMessage() to display an appropriate dialog.
 public class ResetPasswordProcessor {
+
+    private static final Logger log = LoggerFactory.getLogger(ResetPasswordProcessor.class);
 
     private final PasswordResetService passwordResetService;
 
@@ -67,13 +71,13 @@ public class ResetPasswordProcessor {
             lastTempPassword = "";
             lastResultMessage = "Reset failed: " + e.getMessage();
             lastResetSuccessful = false;
-            System.err.println("ResetPasswordProcessor: business rule violation — " + e.getMessage());
+            log.warn("ResetPasswordProcessor: business rule violation — {}", e.getMessage());
             return false;
         } catch (IOException | SQLException e) {
             lastTempPassword = "";
             lastResultMessage = "I/O error during reset: " + e.getMessage();
             lastResetSuccessful = false;
-            System.err.println("ResetPasswordProcessor: I/O error — " + e.getMessage());
+            log.error("ResetPasswordProcessor: I/O error — {}", e.getMessage(), e);
             return false;
         }
     }

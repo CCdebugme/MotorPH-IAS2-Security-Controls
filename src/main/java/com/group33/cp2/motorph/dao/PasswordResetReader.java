@@ -17,7 +17,7 @@ import java.util.List;
  */
 public class PasswordResetReader implements IPasswordResetDAO {
 
-    private static final Logger log = LoggerFactory.getLogger(PasswordResetReader.class);
+    private static final Logger logger = LoggerFactory.getLogger(PasswordResetReader.class);
 
     /**
      * Inserts a new password reset request record into the database.
@@ -71,7 +71,7 @@ public class PasswordResetReader implements IPasswordResetDAO {
                 ));
             }
         } catch (SQLException e) {
-            log.error("PasswordResetReader.getAllRequests failed: {}", e.getMessage(), e);
+            logger.error("PasswordResetReader.getAllRequests failed: {}", e.getMessage(), e);
         }
         return list;
     }

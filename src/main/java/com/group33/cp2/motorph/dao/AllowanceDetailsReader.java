@@ -1,14 +1,19 @@
 package com.group33.cp2.motorph.dao;
 
 import com.group33.cp2.motorph.model.Allowance;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.sql.*;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-// owns read/write access to allowance table.
-// no CSV access remains  all data comes from MySQL via JDBC.
+// Owns read/write access to the allowance table.
+// No CSV access remains — all data comes from MySQL via JDBC.
+// Implements IAllowanceDAO to satisfy the DAO interface contract.
 public class AllowanceDetailsReader implements IAllowanceDAO {
+
+    private static final Logger log = LoggerFactory.getLogger(AllowanceDetailsReader.class);
     
     public boolean allowanceExists(String empId) throws SQLException {
     String sql = "SELECT COUNT(*) FROM allowance WHERE employeeNum = ?";
@@ -37,7 +42,7 @@ public class AllowanceDetailsReader implements IAllowanceDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("AllowanceDetailsReader.getAllowance: " + e.getMessage());
+            log.error("AllowanceDetailsReader.getAllowance failed for emp {}: {}", empId, e.getMessage(), e);
         }
         return null;
     }
@@ -58,12 +63,25 @@ public class AllowanceDetailsReader implements IAllowanceDAO {
                 ));
             }
         } catch (SQLException e) {
-            System.err.println("AllowanceDetailsReader.getAllAllowances: " + e.getMessage());
+            log.error("AllowanceDetailsReader.getAllAllowances failed: {}", e.getMessage(), e);
         }
         return Collections.unmodifiableMap(result);
     }
 
+    /**
+     * Inserts a new allowance record for the given employee.
+     * Checks for an existing record first to prevent duplicate rows.
+     * If a record already exists, updates it instead of inserting.
+     *
+     * @throws SQLException if the database operation fails
+     */
     public void addAllowance(String empId, Allowance allowance) throws SQLException {
+        if (allowanceExists(empId)) {
+            // Record already exists — update instead of inserting a duplicate
+            log.warn("AllowanceDetailsReader.addAllowance: record already exists for emp {}, updating instead.", empId);
+            updateAllowance(empId, allowance);
+            return;
+        }
         String sql = "INSERT INTO allowance VALUES (?, ?, ?, ?)";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {

@@ -4,6 +4,8 @@ import com.group33.cp2.motorph.dao.PayrollLogReader;
 import com.group33.cp2.motorph.model.CompensationDetails;
 import com.group33.cp2.motorph.model.PayrollLog;
 import com.group33.cp2.motorph.model.SalaryDetails;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -11,6 +13,8 @@ import java.util.Collections;
 import java.util.List;
 
 public class PayrollLogService {
+
+    private static final Logger logger = LoggerFactory.getLogger(PayrollLogService.class);
 
     private final PayrollLogReader reader;
 
@@ -22,7 +26,7 @@ public class PayrollLogService {
         try {
             return reader.isAlreadyLogged(empNum, month, year);
         } catch (SQLException e) {
-            System.err.println("PayrollLogService.isAlreadyLogged: " + e.getMessage());
+            logger.error("PayrollLogService.isAlreadyLogged failed: {}", e.getMessage(), e);
             return false;
         }
     }
@@ -31,7 +35,7 @@ public class PayrollLogService {
         try {
             return reader.isPeriodAlreadyLogged(empNum, start, end);
         } catch (SQLException e) {
-            System.err.println("PayrollLogService.isPeriodAlreadyLogged: " + e.getMessage());
+            logger.error("PayrollLogService.isPeriodAlreadyLogged failed: {}", e.getMessage(), e);
             return false;
         }
     }
@@ -75,7 +79,7 @@ public class PayrollLogService {
         try {
             return reader.getAllLogs();
         } catch (SQLException e) {
-            System.err.println("PayrollLogService.getAllLogs: " + e.getMessage());
+            logger.error("PayrollLogService.getAllLogs failed: {}", e.getMessage(), e);
             return Collections.emptyList();
         }
     }
@@ -83,31 +87,30 @@ public class PayrollLogService {
     public List<PayrollLog> getLogsByPeriod(int month, int year) {
         List<PayrollLog> all = getAllLogs();
         List<PayrollLog> filtered = new java.util.ArrayList<>();
-        for (PayrollLog log : all) {
-            if (log.month() == month && log.year() == year) {
-                filtered.add(log);
+        for (PayrollLog entry : all) {
+            if (entry.month() == month && entry.year() == year) {
+                filtered.add(entry);
             }
         }
         return filtered;
     }
+
     public List<PayrollLog> getLogByPeriod(String empNum, LocalDate start, LocalDate end) {
-    try {
-        return reader.getLogByPeriod(empNum, start, end);
-        
-    } catch (SQLException e) {
-        System.err.println("PayrollLogService.getLogByPeriod: " + e.getMessage());
-        return Collections.emptyList();
+        try {
+            return reader.getLogByPeriod(empNum, start, end);
+        } catch (SQLException e) {
+            logger.error("PayrollLogService.getLogByPeriod failed: {}", e.getMessage(), e);
+            return Collections.emptyList();
+        }
     }
-    }
+
     public PayrollLog getSingleLogByPeriod(String empNum, LocalDate start, LocalDate end) {
-    try {
-        List<PayrollLog> logs = reader.getLogByPeriod(empNum, start, end);
-        return logs.isEmpty() ? null : logs.get(0);
-    } catch (SQLException e) {
-        System.err.println("PayrollLogService.getSingleLogByPeriod: " + e.getMessage());
-        return null;
+        try {
+            List<PayrollLog> logs = reader.getLogByPeriod(empNum, start, end);
+            return logs.isEmpty() ? null : logs.get(0);
+        } catch (SQLException e) {
+            logger.error("PayrollLogService.getSingleLogByPeriod failed: {}", e.getMessage(), e);
+            return null;
+        }
     }
-}    
-       
-    
 }
