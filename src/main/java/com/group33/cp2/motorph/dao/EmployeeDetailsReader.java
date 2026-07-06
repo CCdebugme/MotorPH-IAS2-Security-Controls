@@ -4,8 +4,37 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Owns all read/write access to the employees and login tables.
+ * No CSV access remains — all data comes from MySQL via JDBC.
+ * Implements IEmployeeDAO to satisfy the DAO interface contract.
+ *
+ * <p>Row array column order for employees table:</p>
+ * <pre>
+ *   [0] employeeNum  [1] lastName    [2] firstName   [3] birthday
+ *   [4] address      [5] phoneNumber [6] sssNumber    [7] philhealthNumber
+ *   [8] tinNumber    [9] pagibigNumber [10] status    [11] position
+ *   [12] supervisor
+ * </pre>
+ *
+ * <p>Row array column order for login table:</p>
+ * <pre>
+ *   [0] employeeNum  [1] username  [2] roleName  [3] password  [4] changePassword
+ * </pre>
+ *
+ * <p>Method overloading is demonstrated via changeUserPassword():
+ * one variant accepts an explicit changePassword flag;
+ * the other defaults it to "NO".</p>
+ */
 public class EmployeeDetailsReader implements IEmployeeDAO {
 
+    /**
+     * Returns all employee records from the employees table.
+     * Each element in the returned list is a String array in the column order
+     * documented in the class Javadoc above.
+     *
+     * @return list of employee rows; empty list if none found or on error
+     */
     public List<String[]> getAllEmployees() {
         List<String[]> result = new ArrayList<>();
         String sql = "SELECT employeeNum, lastName, firstName, birthday, address, phoneNumber, sssNumber, philhealthNumber, tinNumber, pagibigNumber, status, position, supervisor FROM employees";
@@ -35,6 +64,12 @@ public class EmployeeDetailsReader implements IEmployeeDAO {
         return result;
     }
 
+    /**
+     * Returns a single employee row by employeeNum, or null if not found.
+     *
+     * @param empId the employee number to look up
+     * @return employee row array, or null if not found
+     */
     public String[] getEmployeeDetails(String empId) {
         String sql = "SELECT employeeNum, lastName, firstName, birthday, address, phoneNumber, sssNumber, philhealthNumber, tinNumber, pagibigNumber, status, position, supervisor FROM employees WHERE employeeNum = ?";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -65,6 +100,15 @@ public class EmployeeDetailsReader implements IEmployeeDAO {
         return null;
     }
 
+    /**
+     * Returns true if the given employeeNum and full name match a record in the database.
+     * Name comparison is case-insensitive and expects "FirstName LastName" order.
+     * Used by the password reset flow to verify the employee's identity before submitting a request.
+     *
+     * @param empNum  the employee number to verify
+     * @param empName the full name in "FirstName LastName" format
+     * @return true if a matching record exists
+     */
     public boolean isEmployeeValid(String empNum, String empName) {
         String[] row = getEmployeeDetails(empNum);
         if (row == null || row.length < 3) return false;
@@ -157,6 +201,17 @@ public class EmployeeDetailsReader implements IEmployeeDAO {
         return null;
     }
 
+    /**
+     * Updates the BCrypt-hashed password for the given employee in the login table.
+     * Overload 1 — also sets the changePassword flag explicitly.
+     * Pass "YES" to force the employee to change their password on next login.
+     *
+     * @param empId             the employee number
+     * @param newHashedPassword BCrypt-hashed new password
+     * @param changePassword    "YES" to force change on next login, "NO" otherwise
+     * @return true if a row was updated
+     * @throws SQLException if the update fails
+     */
     public boolean changeUserPassword(String empId, String newHashedPassword,
                                        String changePassword) throws SQLException {
         String sql = "UPDATE login SET password=?, changePassword=? WHERE employeeNum=?";
@@ -169,6 +224,16 @@ public class EmployeeDetailsReader implements IEmployeeDAO {
         }
     }
 
+    /**
+     * Updates the BCrypt-hashed password for the given employee in the login table.
+     * Overload 2 — defaults changePassword flag to "NO".
+     * Used by the employee-initiated password change flow.
+     *
+     * @param empId             the employee number
+     * @param newHashedPassword BCrypt-hashed new password
+     * @return true if a row was updated
+     * @throws SQLException if the update fails
+     */
     public boolean changeUserPassword(String empId, String newHashedPassword)
             throws SQLException {
         return changeUserPassword(empId, newHashedPassword, "NO");

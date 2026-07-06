@@ -8,8 +8,31 @@ import java.time.LocalDate;
 import java.time.temporal.WeekFields;
 import java.util.Locale;
 
-// Computes government deductions (SSS, PhilHealth, Pag-IBIG, withholding tax)
-// and bi-weekly period logic.
+/**
+ * Computes all Philippine government-mandated payroll deductions and
+ * pay period calendar logic for the MotorPH Payroll System.
+ *
+ * <p>Deduction formulas implemented:</p>
+ * <ul>
+ *   <li>SSS — bracket-table lookup via SSSDeductionsBracket</li>
+ *   <li>PhilHealth — 3% premium, employee share only, no contribution below PHP 10,000</li>
+ *   <li>Pag-IBIG — 1% or 2% of salary, capped at PHP 100</li>
+ *   <li>BIR Withholding Tax — 6-tier progressive rate based on semi-monthly taxable income</li>
+ * </ul>
+ *
+ * <p>All deduction methods are static so they can be called without instantiation.
+ * All bracket thresholds, rates, and caps are defined as named constants
+ * rather than inline magic numbers to improve readability and ease future updates.</p>
+ *
+ * <p>Method overloading is demonstrated via:</p>
+ * <ul>
+ *   <li>{@link #computeNetPay(double)} — auto-computes all deductions</li>
+ *   <li>{@link #computeNetPay(double, double)} — caller supplies total deductions</li>
+ *   <li>{@link #computeNetPay(double, double, double)} — includes allowances</li>
+ *   <li>{@link #computeWithholdingTax(double)} — derives taxable income internally</li>
+ *   <li>{@link #computeWithholdingTax(double, double)} — caller supplies taxable income</li>
+ * </ul>
+ */
 public class PayrollCalculator {
 
     // ── BIR Withholding Tax — bracket thresholds (semi-monthly taxable income) ──
@@ -57,11 +80,25 @@ public class PayrollCalculator {
     private static final int DIVISOR_MONTHLY   = 1;
     private static final int MINIMUM_FIVE_WEEKS = 5;
 
+    /**
+     * Returns the week-of-month number for the given date using the default locale.
+     * Week 1 starts on the first day of the month.
+     *
+     * @param date the date to evaluate
+     * @return week-of-month number (1-based)
+     */
     public static int getWeekOfMonth(LocalDate date) {
         WeekFields weekFields = WeekFields.of(Locale.getDefault());
         return date.get(weekFields.weekOfMonth());
     }
 
+    /**
+     * Returns true if week 1 of the month containing the given date
+     * overlaps with the previous month.
+     *
+     * @param date any date within the month to check
+     * @return true if week 1 starts before the first day of the month
+     */
     public static boolean isWeek1OverlappingPreviousMonth(LocalDate date) {
         WeekFields weekFields = WeekFields.of(Locale.getDefault());
         LocalDate firstDayOfMonth = date.withDayOfMonth(1);
@@ -69,6 +106,13 @@ public class PayrollCalculator {
         return weekNumberOfFirstDay != 1;
     }
 
+    /**
+     * Returns true if the month containing the given date spans five or more weeks.
+     * Used to determine whether a month has an extra pay period.
+     *
+     * @param date any date within the month to check
+     * @return true if the month has 5 or more weeks
+     */
     public static boolean hasFiveWeeks(LocalDate date) {
         LocalDate firstDay = date.withDayOfMonth(1);
         LocalDate lastDay = date.withDayOfMonth(date.lengthOfMonth());
@@ -77,6 +121,14 @@ public class PayrollCalculator {
         return lastWeek - firstWeek + 1 >= MINIMUM_FIVE_WEEKS;
     }
 
+    /**
+     * Returns the number of pay periods per year for the given period type.
+     * Used to divide monthly deduction amounts into per-period amounts.
+     * WEEKLY=4, BIWEEKLY=2, MONTHLY=1. Defaults to 1 for null input.
+     *
+     * @param periodType the pay period type; null defaults to MONTHLY
+     * @return divisor (4, 2, or 1)
+     */
     // WEEKLY=4, BIWEEKLY=2, MONTHLY=1
     public static int getDivisor(PeriodType periodType) {
         if (periodType == null) {
@@ -110,6 +162,13 @@ public class PayrollCalculator {
         return new Deductions(employeeID, sss, philhealth, pagibig, tax);
     }
 
+    /**
+     * Returns the combined SSS + PhilHealth + Pag-IBIG deduction for the given salary.
+     * Used internally by computeWithholdingTax to derive taxable income.
+     *
+     * @param basicSalary the employee's semi-monthly basic salary
+     * @return total of SSS, PhilHealth, and Pag-IBIG deductions
+     */
     public static double getSSSPhilhealthPagibig(double basicSalary) {
         return computeSSSDeduction(basicSalary)
              + computePhilhealthDeduction(basicSalary)
@@ -189,6 +248,13 @@ public class PayrollCalculator {
                ? (basicSalary * PHILHEALTH_RATE) / 2 : 0;
     }
 
+    /**
+     * Returns the SSS employee contribution for the given basic salary
+     * by looking up the nearest lower bracket in the SSS contribution table.
+     *
+     * @param basicSalary the employee's semi-monthly basic salary
+     * @return SSS contribution amount in PHP
+     */
     // looks up the SSS contribution from the bracket table
     public static double computeSSSDeduction(double basicSalary) {
         return SSSDeductionsBracket.getDeductions()

@@ -7,8 +7,22 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 
+/**
+ * Owns all read/write access to the salary table.
+ * No CSV access remains — all data comes from MySQL via JDBC.
+ * Implements ISalaryDAO to satisfy the DAO interface contract.
+ *
+ * <p>The salary table stores: basicSalary, hourlyRate, grossSMRate per employee.
+ * getAllSalaries() returns an unmodifiable map keyed by employeeNum.</p>
+ */
 public class SalaryDetailsReader implements ISalaryDAO {
 
+    /**
+     * Returns the Salary record for the given employee, or null if not found.
+     *
+     * @param empId the employee number to look up
+     * @return Salary model containing basicSalary, hourlyRate, grossSMRate; or null
+     */
     public Salary getSalary(String empId) {
         String sql = "SELECT basicSalary, hourlyRate, grossSMRate FROM salary WHERE employeeNum = ?";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -29,6 +43,11 @@ public class SalaryDetailsReader implements ISalaryDAO {
         return null;
     }
 
+    /**
+     * Returns all salary records as an unmodifiable map keyed by employeeNum.
+     *
+     * @return unmodifiable map of employeeNum to Salary; empty map on error
+     */
     public Map<String, Salary> getAllSalaries() {
         Map<String, Salary> result = new LinkedHashMap<>();
         String sql = "SELECT employeeNum, basicSalary, hourlyRate, grossSMRate FROM salary";
@@ -48,6 +67,13 @@ public class SalaryDetailsReader implements ISalaryDAO {
         return Collections.unmodifiableMap(result);
     }
 
+    /**
+     * Inserts a new salary record for the given employee.
+     *
+     * @param empId  the employee number
+     * @param salary Salary object containing basicSalary, hourlyRate, grossSMRate
+     * @throws SQLException if the insert fails
+     */
     public void addSalary(String empId, Salary salary) throws SQLException {
         String sql = "INSERT INTO salary VALUES (?, ?, ?, ?)";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -60,6 +86,13 @@ public class SalaryDetailsReader implements ISalaryDAO {
         }
     }
 
+    /**
+     * Updates the salary record for the given employee.
+     *
+     * @param empId  the employee number
+     * @param salary Salary object containing updated values
+     * @throws SQLException if the update fails
+     */
     public void updateSalary(String empId, Salary salary) throws SQLException {
         String sql = "UPDATE salary SET basicSalary=?, hourlyRate=?, grossSMRate=? WHERE employeeNum=?";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -72,6 +105,12 @@ public class SalaryDetailsReader implements ISalaryDAO {
         }
     }
 
+    /**
+     * Deletes the salary record for the given employee.
+     *
+     * @param empId the employee number whose salary record should be removed
+     * @throws SQLException if the delete fails
+     */
     public void deleteSalary(String empId) throws SQLException {
         String sql = "DELETE FROM salary WHERE employeeNum = ?";
         try (Connection conn = DatabaseConnection.getConnection();

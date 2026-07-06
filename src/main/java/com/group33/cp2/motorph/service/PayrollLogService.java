@@ -14,7 +14,7 @@ import java.util.List;
 
 public class PayrollLogService {
 
-    private static final Logger logger = LoggerFactory.getLogger(PayrollLogService.class);
+    private static final Logger log = LoggerFactory.getLogger(PayrollLogService.class);
 
     private final PayrollLogReader reader;
 
@@ -26,7 +26,7 @@ public class PayrollLogService {
         try {
             return reader.isAlreadyLogged(empNum, month, year);
         } catch (SQLException e) {
-            logger.error("PayrollLogService.isAlreadyLogged failed: {}", e.getMessage(), e);
+            log.error("PayrollLogService.isAlreadyLogged failed: {}", e.getMessage(), e);
             return false;
         }
     }
@@ -35,7 +35,7 @@ public class PayrollLogService {
         try {
             return reader.isPeriodAlreadyLogged(empNum, start, end);
         } catch (SQLException e) {
-            logger.error("PayrollLogService.isPeriodAlreadyLogged failed: {}", e.getMessage(), e);
+            log.error("PayrollLogService.isPeriodAlreadyLogged failed: {}", e.getMessage(), e);
             return false;
         }
     }
@@ -79,7 +79,7 @@ public class PayrollLogService {
         try {
             return reader.getAllLogs();
         } catch (SQLException e) {
-            logger.error("PayrollLogService.getAllLogs failed: {}", e.getMessage(), e);
+            log.error("PayrollLogService.getAllLogs failed: {}", e.getMessage(), e);
             return Collections.emptyList();
         }
     }
@@ -99,7 +99,7 @@ public class PayrollLogService {
         try {
             return reader.getLogByPeriod(empNum, start, end);
         } catch (SQLException e) {
-            logger.error("PayrollLogService.getLogByPeriod failed: {}", e.getMessage(), e);
+            log.error("PayrollLogService.getLogByPeriod failed: {}", e.getMessage(), e);
             return Collections.emptyList();
         }
     }
@@ -109,7 +109,7 @@ public class PayrollLogService {
             List<PayrollLog> logs = reader.getLogByPeriod(empNum, start, end);
             return logs.isEmpty() ? null : logs.get(0);
         } catch (SQLException e) {
-            logger.error("PayrollLogService.getSingleLogByPeriod failed: {}", e.getMessage(), e);
+            log.error("PayrollLogService.getSingleLogByPeriod failed: {}", e.getMessage(), e);
             return null;
         }
     }
