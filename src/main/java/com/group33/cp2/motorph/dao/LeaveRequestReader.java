@@ -14,6 +14,17 @@ import java.util.List;
  * No CSV access remains — all data comes from MySQL via JDBC.
  * Implements ILeaveRequestDAO to satisfy the DAO interface contract.
  */
+/**
+ * Owns all read/write access to the leave_requests table.
+ * No CSV access remains — all data comes from MySQL via JDBC.
+ * Implements {@link ILeaveRequestDAO} to satisfy the DAO interface contract.
+ *
+ * <p>Previously owned read/write access to LeaveRequests.csv — fully migrated
+ * to MySQL. Date fields are stored as VARCHAR and parsed to
+ * {@link java.time.LocalDate} on retrieval. {@link #getAllLeaveRequests()}
+ * skips malformed rows and logs a warning rather than throwing, so the
+ * HR dashboard can still load even if individual records are corrupt.</p>
+ */
 public class LeaveRequestReader implements ILeaveRequestDAO {
 
     private static final Logger log = LoggerFactory.getLogger(LeaveRequestReader.class);

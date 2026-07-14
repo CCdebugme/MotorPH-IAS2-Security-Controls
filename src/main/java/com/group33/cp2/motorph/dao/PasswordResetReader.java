@@ -15,6 +15,16 @@ import java.util.List;
  * No CSV access remains — all data comes from MySQL via JDBC.
  * Implements IPasswordResetDAO to satisfy the DAO interface contract.
  */
+/**
+ * Owns all read/write access to the password_reset_requests table.
+ * No CSV access remains — all data comes from MySQL via JDBC.
+ * Implements {@link IPasswordResetDAO} to satisfy the DAO interface contract.
+ *
+ * <p>{@link #getAllRequests()} returns an empty list rather than throwing on
+ * SQL error so the IT dashboard can still load. {@link #approveRequest} only
+ * updates records with status = 'Pending'. The dateOfReset field is formatted
+ * as "MM/dd/yyyy - hh:mm:ss a" to match the existing display format.</p>
+ */
 public class PasswordResetReader implements IPasswordResetDAO {
 
     private static final Logger logger = LoggerFactory.getLogger(PasswordResetReader.class);

@@ -10,8 +10,28 @@ import java.util.List;
 
 // owns read/write access to attendance table.
 // no CSV access remains  all data comes from MySQL via JDBC.
+/**
+ * Owns all read/write access to the attendance table.
+ * No CSV access remains — all data comes from MySQL via JDBC.
+ * Implements {@link IAttendanceDAO} to satisfy the DAO interface contract.
+ *
+ * <p>Date values are stored as VARCHAR in MM/dd/yyyy format in the database
+ * and parsed back to {@link java.time.LocalDate} on retrieval.</p>
+ *
+ * <p>Method overloading is demonstrated via {@link #getTimeLogs(String)} and
+ * {@link #getTimeLogs(String, LocalDate, LocalDate)} — the first returns all
+ * logs for an employee with no date filter; the second filters by date range.</p>
+ */
 public class AttendanceDAO implements IAttendanceDAO {
 
+    /**
+     * Loads all attendance records from the database.
+     * Used at startup by {@link com.group33.cp2.motorph.service.AttendanceService}
+     * to build an in-memory snapshot.
+     *
+     * @return list of all Attendance records; empty list if none found
+     * @throws SQLException if the query fails
+     */
     public List<Attendance> loadAllAttendance() throws SQLException {
         List<Attendance> result = new ArrayList<>();
         String sql = "SELECT empNum, date, logIn, logOut FROM attendance WHERE logOut IS NOT NULL AND logOut != ''";
@@ -47,6 +67,13 @@ public class AttendanceDAO implements IAttendanceDAO {
         return result;
     }
 
+    /**
+     * Records a clock-in event for the given employee using the current date and time.
+     * Inserts a new attendance row with logIn set to now and logOut left blank.
+     *
+     * @param empId the employee number clocking in
+     * @throws SQLException if the insert fails or the employee already has an entry today
+     */
     public void clockIn(String empId) throws SQLException {
         String today = java.time.format.DateTimeFormatter
             .ofPattern("MM/dd/yyyy").format(LocalDate.now());
@@ -66,6 +93,14 @@ public class AttendanceDAO implements IAttendanceDAO {
         }
     }
 
+    /**
+     * Records a clock-out event for the given employee using the current time.
+     * Updates the most recent attendance row for today with the logOut time
+     * and computes the total hours worked.
+     *
+     * @param empId the employee number clocking out
+     * @throws SQLException if the update fails or no active clock-in is found
+     */
     public void clockOut(String empId) throws SQLException {
         String timeOut = java.time.format.DateTimeFormatter
             .ofPattern("HH:mm").format(java.time.LocalTime.now());
@@ -82,6 +117,15 @@ public class AttendanceDAO implements IAttendanceDAO {
         }
     }
 
+    /**
+     * Returns all time log rows for the given employee with no date filter.
+     * Overload 1 of 2 — demonstrates method overloading.
+     * Each row is a String array: [0]=empNum [1]=date [2]=logIn [3]=logOut [4]=hoursWorked.
+     *
+     * @param empId the employee number to retrieve logs for
+     * @return list of time log rows; empty list if none found
+     * @throws SQLException if the query fails
+     */
     public List<String[]> getTimeLogs(String empId) throws SQLException {
         List<String[]> logs = new ArrayList<>();
         String sql = "SELECT empNum, date, logIn, logOut, hoursWorked FROM attendance WHERE empNum = ?";
@@ -103,6 +147,17 @@ public class AttendanceDAO implements IAttendanceDAO {
         return logs;
     }
 
+    /**
+     * Returns time log rows for the given employee filtered by a date range.
+     * Overload 2 of 2 — demonstrates method overloading.
+     * Each row is a String array: [0]=empNum [1]=date [2]=logIn [3]=logOut [4]=hoursWorked.
+     *
+     * @param empId the employee number to retrieve logs for
+     * @param start the start of the date range (inclusive)
+     * @param end   the end of the date range (inclusive)
+     * @return list of matching time log rows; empty list if none found
+     * @throws SQLException if the query fails
+     */
     public List<String[]> getTimeLogs(String empId, LocalDate start, LocalDate end) throws SQLException {
         List<String[]> logs = new ArrayList<>();
         String sql = "SELECT empNum, date, logIn, logOut, hoursWorked FROM attendance WHERE empNum = ?";
