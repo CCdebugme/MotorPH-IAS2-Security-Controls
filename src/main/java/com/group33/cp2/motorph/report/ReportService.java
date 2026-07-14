@@ -178,7 +178,7 @@ public class ReportService {
 
         // ── Build lookup maps keyed by empNum ──
         Map<String, String>   nameMap       = new LinkedHashMap<>();
-        Map<String, String>   deptMap       = new LinkedHashMap<>(); // using position as dept
+        Map<String, String>   deptMap       = new LinkedHashMap<>();
         Map<String, String>   positionMap   = new LinkedHashMap<>();
         Map<String, String[]> govIdsMap     = new LinkedHashMap<>();
         Map<String, double[]> deductionsMap = new LinkedHashMap<>();
@@ -207,9 +207,8 @@ public class ReportService {
         String periodLabel = (periodFilter == null || periodFilter.isBlank())
                              ? "All Periods" : periodFilter;
 
-        // ── Convert PayrollLog list to String[] rows for ReportDataSource ──
-        // row format: [0]=id [1]=empNum [2]=name [3]=period [6]=gross [8]=net
-        List<String[]> filtered = allLogs.stream()
+        // ── Convert PayrollLog list to PayrollReportRow objects for ReportDataSource ──
+        List<PayrollReportRow> filtered = allLogs.stream()
             .filter(log -> {
                 String dept = deptMap.getOrDefault(log.empNum(), "");
                 boolean deptOk   = "All Departments".equals(deptLabel) ||
@@ -220,21 +219,29 @@ public class ReportService {
             })
             .collect(Collectors.toMap(
                 PayrollLog::empNum,
-                log -> new String[]{
-                    "0",                           // [0] id placeholder
-                    log.empNum(),                  // [1] empNum
-                    nameMap.getOrDefault(log.empNum(), ""), // [2] name
-                    log.periodStart() + " to " + log.periodEnd(), // [3] period
-                    "0", "0",                      // [4] reg hrs, [5] ot hrs
-                    String.valueOf(log.grossSalary()),  // [6] gross
-                    String.valueOf(log.totalDeductions()), // [7] total ded
-                    String.valueOf(log.netSalary())     // [8] net
+                log -> {
+                    String   id       = log.empNum();
+                    String[] govIds   = govIdsMap.getOrDefault(id, new String[]{"","","",""});
+                    double[] ded      = deductionsMap.getOrDefault(id, new double[]{0,0,0,0});
+                    return new PayrollReportRow(
+                        id,
+                        nameMap.getOrDefault(id, ""),
+                        positionMap.getOrDefault(id, ""),
+                        deptMap.getOrDefault(id, ""),
+                        log.grossSalary(),
+                        log.netSalary(),
+                        govIds.length > 0 ? govIds[0] : "",
+                        govIds.length > 1 ? govIds[1] : "",
+                        govIds.length > 2 ? govIds[2] : "",
+                        govIds.length > 3 ? govIds[3] : "",
+                        ded[0], ded[1], ded[2], ded[3]
+                    );
                 },
                 (a, b) -> b,
                 LinkedHashMap::new
             ))
             .values().stream()
-            .sorted(Comparator.comparing(r -> r[1]))
+            .sorted(Comparator.comparing(PayrollReportRow::getEmpNum))
             .collect(Collectors.toList());
 
         if (filtered.isEmpty()) {
@@ -248,8 +255,7 @@ public class ReportService {
         params.put("GENERATED_BY",   generatedByEmpNum);
         params.put("GENERATED_DATE", LocalDate.now().format(OUT_DATE_FMT));
 
-        ReportDataSource ds = new ReportDataSource(
-                filtered, deptMap, nameMap, govIdsMap, deductionsMap, positionMap);
+        ReportDataSource ds = new ReportDataSource(filtered);
 
         fillAndExport("/reports/payroll_department.jrxml", ds, params, outputFile);
     }

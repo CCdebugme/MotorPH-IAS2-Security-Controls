@@ -3,108 +3,117 @@ package com.group33.cp2.motorph.report;
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRField;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.Map;
 
 /**
- * Custom JRDataSource for the Monthly Payroll Summary Report.
+ * Custom {@link JRDataSource} for the Monthly Payroll Summary Report.
  *
- * Each row in {@code data} is a payroll record array from PayrollLogReader,
- * expected column order:
- *   [0] payroll_id  [1] empNum  [2] empName  [3] period
- *   [4] regular_hours  [5] overtime_hours  [6] gross_pay
- *   [7] total_deductions  [8] net_pay
+ * <p>Feeds a list of {@link PayrollReportRow} objects to the JasperReports
+ * engine row by row. Each call to {@link #next()} advances to the next row,
+ * and {@link #getFieldValue(JRField)} returns the value for the requested field.</p>
  *
- * Government IDs and individual deduction amounts are looked up
- * via the supplied maps rather than hitting the DB on every field call.
+ * <p>Field names are declared as constants (e.g. {@link #FIELD_EMP_NO}) rather
+ * than raw string literals to prevent typos and make refactoring safer. Each
+ * constant must match the {@code <field name="...">} declaration in
+ * {@code payroll_department.jrxml} exactly.</p>
  *
- * Field names must match the &lt;field name="..."&gt; declarations in
- * payroll_department.jrxml exactly.
+ * <p>Replaces the raw {@code String[]} array approach with a typed
+ * {@link PayrollReportRow} model class for improved readability,
+ * type safety, and maintainability.</p>
  */
 public class ReportDataSource implements JRDataSource {
 
-    private final List<String[]>        data;
-    private final Map<String, String>   deptMap;       // empNum  -> department name
-    private final Map<String, String>   nameMap;       // empNum  -> "First Last"
-    private final Map<String, String[]> govIdsMap;     // empNum  -> [sssNo, phNo, tin, pagibigNo]
-    private final Map<String, double[]> deductionsMap; // empNum  -> [sss, philhealth, pagibig, tax]
-    private final Map<String, String>   positionMap;   // empNum  -> position title
+    private static final Logger log = LoggerFactory.getLogger(ReportDataSource.class);
 
+    // ── JRXML field name constants ────────────────────────────────────────────
+    // Must match <field name="..."> declarations in payroll_department.jrxml exactly.
+
+    public static final String FIELD_EMP_NO               = "empNo";
+    public static final String FIELD_EMP_NAME             = "empName";
+    public static final String FIELD_POSITION             = "position";
+    public static final String FIELD_DEPARTMENT           = "department";
+    public static final String FIELD_GROSS_INCOME         = "grossIncome";
+    public static final String FIELD_NET_PAY              = "netPay";
+    public static final String FIELD_SSS_NO               = "sssNo";
+    public static final String FIELD_SSS_CONTRIBUTION     = "sssContribution";
+    public static final String FIELD_PHILHEALTH_NO        = "philhealthNo";
+    public static final String FIELD_PHILHEALTH_CONTRIB   = "philhealthContribution";
+    public static final String FIELD_PAGIBIG_NO           = "pagibigNo";
+    public static final String FIELD_PAGIBIG_CONTRIB      = "pagibigContribution";
+    public static final String FIELD_TIN                  = "tin";
+    public static final String FIELD_WITHHOLDING_TAX      = "withholdingTax";
+
+    // ── Data ─────────────────────────────────────────────────────────────────
+
+    private final List<PayrollReportRow> rows;
     private int index = -1;
 
     /**
-     * @param data          List of payroll row arrays (one per employee)
-     * @param deptMap       empNum → department name
-     * @param nameMap       empNum → full name
-     * @param govIdsMap     empNum → [sssNo, philhealthNo, tin, pagibigNo]
-     * @param deductionsMap empNum → [sssAmt, philhealthAmt, pagibigAmt, taxAmt]
-     * @param positionMap   empNum → position title
+     * Constructs a data source from the given list of payroll report rows.
+     *
+     * @param rows list of {@link PayrollReportRow} objects to feed to JasperReports;
+     *             must not be null or empty
      */
-    public ReportDataSource(List<String[]>        data,
-                            Map<String, String>   deptMap,
-                            Map<String, String>   nameMap,
-                            Map<String, String[]> govIdsMap,
-                            Map<String, double[]> deductionsMap,
-                            Map<String, String>   positionMap) {
-        this.data          = data;
-        this.deptMap       = deptMap;
-        this.nameMap       = nameMap;
-        this.govIdsMap     = govIdsMap;
-        this.deductionsMap = deductionsMap;
-        this.positionMap   = positionMap;
+    public ReportDataSource(List<PayrollReportRow> rows) {
+        this.rows = rows;
     }
 
+    /**
+     * Advances the cursor to the next row.
+     *
+     * @return true if there is another row to process; false when all rows
+     *         have been consumed
+     * @throws JRException if an error occurs advancing the cursor
+     */
     @Override
     public boolean next() throws JRException {
         index++;
-        return index < data.size();
+        return index < rows.size();
     }
 
+    /**
+     * Returns the value for the requested JRXML field from the current row.
+     *
+     * <p>Field names are matched against the constants defined in this class.
+     * If an unrecognised field name is requested, a warning is logged and
+     * {@code null} is returned rather than throwing — this prevents the entire
+     * report from failing due to a single unknown field.</p>
+     *
+     * @param field the JasperReports field descriptor whose value is needed
+     * @return the field value from the current {@link PayrollReportRow},
+     *         or {@code null} if the field name is not recognised
+     * @throws JRException if an error occurs retrieving the value
+     */
     @Override
     public Object getFieldValue(JRField field) throws JRException {
-        String[] row   = data.get(index);
-        String   empId = row[1].trim();
-        String   name  = field.getName();
+        PayrollReportRow row  = rows.get(index);
+        String           name = field.getName();
 
-        // ── Text fields ──────────────────────────────────────────────
-        if ("empNo".equals(name))         return empId;
-        if ("empName".equals(name))       return nameMap.getOrDefault(empId, "Unknown");
-        if ("department".equals(name))    return deptMap.getOrDefault(empId, "General");
-        if ("position".equals(name))      return positionMap.getOrDefault(empId, "Employee");
+        // ── Text fields ───────────────────────────────────────────────────────
+        if (FIELD_EMP_NO.equals(name))     return row.getEmpNum();
+        if (FIELD_EMP_NAME.equals(name))   return row.getEmpName();
+        if (FIELD_POSITION.equals(name))   return row.getPosition();
+        if (FIELD_DEPARTMENT.equals(name)) return row.getDepartment();
+        if (FIELD_SSS_NO.equals(name))     return row.getSssNo();
+        if (FIELD_PHILHEALTH_NO.equals(name)) return row.getPhilhealthNo();
+        if (FIELD_TIN.equals(name))        return row.getTin();
+        if (FIELD_PAGIBIG_NO.equals(name)) return row.getPagibigNo();
 
-        // ── Financial totals ─────────────────────────────────────────
-        try {
-            if ("grossIncome".equals(name)) return parseDouble(row[6]);
-            if ("netPay".equals(name))      return parseDouble(row[8]);
-        } catch (Exception e) {
-            return 0.0;
-        }
+        // ── Numeric fields ────────────────────────────────────────────────────
+        if (FIELD_GROSS_INCOME.equals(name))       return row.getGrossIncome();
+        if (FIELD_NET_PAY.equals(name))            return row.getNetPay();
+        if (FIELD_SSS_CONTRIBUTION.equals(name))   return row.getSssContribution();
+        if (FIELD_PHILHEALTH_CONTRIB.equals(name)) return row.getPhilhealthContribution();
+        if (FIELD_PAGIBIG_CONTRIB.equals(name))    return row.getPagibigContribution();
+        if (FIELD_WITHHOLDING_TAX.equals(name))    return row.getWithholdingTax();
 
-        // ── Deduction amounts (from pre-built map) ───────────────────
-        double[] ded = deductionsMap.getOrDefault(empId, new double[]{0, 0, 0, 0});
-        if ("sssContribution".equals(name))        return ded[0];
-        if ("philhealthContribution".equals(name)) return ded[1];
-        if ("pagibigContribution".equals(name))    return ded[2];
-        if ("withholdingTax".equals(name))         return ded[3];
-
-        // ── Government ID numbers (from pre-built map) ───────────────
-        String[] govIds = govIdsMap.getOrDefault(empId, new String[]{"", "", "", ""});
-        if ("sssNo".equals(name))        return govIds[0];
-        if ("philhealthNo".equals(name)) return govIds[1];
-        if ("tin".equals(name))          return govIds[2];
-        if ("pagibigNo".equals(name))    return govIds[3];
-
+        // ── Unknown field — log warning and return null ───────────────────────
+        log.warn("ReportDataSource: unrecognised field name '{}' — returning null. "
+                + "Check that JRXML field names match the constants in ReportDataSource.",
+                name);
         return null;
-    }
-
-    // ── Helpers ──────────────────────────────────────────────────────
-
-    private double parseDouble(String s) {
-        try {
-            return Double.parseDouble(s.replace(",", "").replace("\u20b1", "").trim());
-        } catch (Exception e) {
-            return 0.0;
-        }
     }
 }
