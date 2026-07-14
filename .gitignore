@@ -32,4 +32,5 @@ dist/
 # External employee data written at runtime (user.home copy)
 MotorPHEmployeeData.csv
 src/test/java/com/group33/cp2/motorph/model/PayrollTest.java
+db.properties
 
