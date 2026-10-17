@@ -7,6 +7,7 @@ import com.group33.cp2.motorph.model.HR;
 import com.group33.cp2.motorph.model.IT;
 import com.group33.cp2.motorph.service.AuthService;
 import com.group33.cp2.motorph.service.EmployeeService;
+import com.group33.cp2.motorph.service.LoginAttemptService;
 import com.group33.cp2.motorph.util.Constants;
 import com.group33.cp2.motorph.util.DialogUtil;
 import org.mindrot.jbcrypt.BCrypt;
@@ -51,6 +52,7 @@ public class LoginFrame extends javax.swing.JFrame {
 
     private final AuthService     authService     = new AuthService();
     private final EmployeeService employeeService = new EmployeeService();
+    private final LoginAttemptService loginAttemptService = new LoginAttemptService();
     private char passwordEchoChar;
 
     public LoginFrame() {
@@ -303,19 +305,41 @@ public class LoginFrame extends javax.swing.JFrame {
         String[] loginRow = authService.getLoginDataByUsername(username);
 
         if (loginRow == null) {
+            loginAttemptService.recordUnknownUser(username);
             JOptionPane.showMessageDialog(this, "Invalid username or password.",
                     "Login Failed", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
+        // Lockout check: block the attempt before the password is even checked.
+        // Fails closed: if the lock status can't be read, login is refused.
+        try {
+            long lockedSeconds = loginAttemptService.getRemainingLockSeconds(username);
+            if (lockedSeconds > 0) {
+                long minutes = (lockedSeconds + 59) / 60;
+                txtPassword.setText("");
+                JOptionPane.showMessageDialog(this,
+                        "Too many failed attempts. Try again in " + minutes + " minute(s).",
+                        "Account Locked", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this,
+                    "Login is temporarily unavailable. Please try again.",
+                    "Login Unavailable", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
         String storedHash = loginRow.length > 3 ? loginRow[3].trim() : "";
         if (!BCrypt.checkpw(password, storedHash)) {
+            loginAttemptService.recordFailure(username);
             txtPassword.setText("");
             txtPassword.requestFocusInWindow();
             JOptionPane.showMessageDialog(this, "Invalid username or password.",
                     "Login Failed", JOptionPane.ERROR_MESSAGE);
             return;
         }
+        loginAttemptService.recordSuccess(username);
 
         // Check if password change is required
         String changePw = loginRow.length > 4 ? loginRow[4].trim() : "NO";
