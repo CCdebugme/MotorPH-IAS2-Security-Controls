@@ -5,16 +5,15 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 // Lockout after repeated failed logins, plus audit logging of every attempt.
+// Events go through AuditService so they are hash-chained, carry host/IP, and are tamper-evident.
 public class LoginAttemptService {
 
     public static final int MAX_FAILED_ATTEMPTS = 3;
     public static final int COOLDOWN_MINUTES = 2; // short for testing; raise for real use
 
-    private static final Logger AUDIT = LoggerFactory.getLogger("AUDIT");
+    private static final AuditService AUDIT = AuditService.getInstance();
 
     // Seconds left on the lock, or 0 if the account is not locked.
     // An expired lock is cleared here (the "unlock" half of the control).
@@ -32,13 +31,13 @@ public class LoginAttemptService {
                 }
                 long remaining = rs.getLong("remaining");
                 if (remaining > 0) {
-                    AUDIT.warn("BLOCKED_ATTEMPT user={} remainingSeconds={}", clean(username), remaining);
+                    AUDIT.logAs(username, "", "LOGIN_BLOCKED_LOCKED", "DENIED", "remainingSeconds=" + remaining);
                     return remaining;
                 }
             }
         }
         resetCounter(username);
-        AUDIT.info("LOCKOUT_EXPIRED user={}", clean(username));
+        AUDIT.logAs(username, "", "LOCKOUT_EXPIRED", "INFO", "counter reset");
         return 0;
     }
 
@@ -63,15 +62,15 @@ public class LoginAttemptService {
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         int attempts = rs.getInt(1);
-                        AUDIT.warn("LOGIN_FAILED user={} attempts={}/{}", clean(username), attempts, MAX_FAILED_ATTEMPTS);
+                        AUDIT.logAs(username, "", "LOGIN_FAILED", "FAILURE", "attempts=" + attempts + "/" + MAX_FAILED_ATTEMPTS);
                         if (attempts >= MAX_FAILED_ATTEMPTS) {
-                            AUDIT.warn("LOCKOUT_TRIGGERED user={} cooldownMinutes={}", clean(username), COOLDOWN_MINUTES);
+                            AUDIT.logAs(username, "", "LOCKOUT_TRIGGERED", "ALERT", "cooldownMinutes=" + COOLDOWN_MINUTES);
                         }
                     }
                 }
             }
         } catch (SQLException e) {
-            AUDIT.error("Could not record failed login for user={}", clean(username), e);
+            AUDIT.logAs(username, "", "AUDIT_ERROR", "FAILURE", "could not record failed login: " + e.getMessage());
         }
     }
 
@@ -80,14 +79,14 @@ public class LoginAttemptService {
         try {
             resetCounter(username);
         } catch (SQLException e) {
-            AUDIT.error("Could not reset login counter for user={}", clean(username), e);
+            AUDIT.logAs(username, "", "AUDIT_ERROR", "FAILURE", "could not reset login counter: " + e.getMessage());
         }
-        AUDIT.info("LOGIN_SUCCESS user={}", clean(username));
+        AUDIT.logAs(username, "", "LOGIN_SUCCESS", "SUCCESS", "counter reset");
     }
 
     // Username does not exist: nothing to lock, but the attempt is still logged.
     public void recordUnknownUser(String username) {
-        AUDIT.warn("LOGIN_FAILED user={} reason=unknown_user", clean(username));
+        AUDIT.logAs(username, "", "LOGIN_FAILED", "FAILURE", "reason=unknown_user");
     }
 
     private void resetCounter(String username) throws SQLException {
@@ -99,8 +98,5 @@ public class LoginAttemptService {
         }
     }
 
-    // Strip line breaks so a typed username can't forge extra log lines.
-    private static String clean(String s) {
-        return s == null ? "" : s.replaceAll("[\\r\\n]", "_");
-    }
+    // Line-break stripping now happens centrally in AuditService, so no local clean() is needed.
 }

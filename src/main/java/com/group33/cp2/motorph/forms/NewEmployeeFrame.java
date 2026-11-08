@@ -511,10 +511,20 @@ public class NewEmployeeFrame extends javax.swing.JFrame {
             Employee newEmployee = createEmployeeFromForm();
             employeeService.addEmployee(newEmployee);
 
+            // Confirm the row really exists in the database (service reloads after saving)
+            // and show the ID as stored there, instead of assuming the insert worked.
+            Employee saved = employeeService.getEmployeeById(newEmployee.getEmployeeID());
+            if (saved == null) {
+                JOptionPane.showMessageDialog(this,
+                        "The employee could not be saved. Please check the database and try again.",
+                        "Save Failed", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
             JOptionPane.showMessageDialog(
                     this,
-                    "Employee " + newEmployee.getFirstName() + " has been successfully added!\n"
-                    + "Employee ID: " + newEmployee.getEmployeeID() + "\n"
+                    "Employee " + saved.getFirstName() + " has been successfully added!\n"
+                    + "Employee ID: " + saved.getEmployeeID() + "\n"
                     + "The employee data has been saved to the CSV file.",
                     "Employee Added Successfully",
                     JOptionPane.INFORMATION_MESSAGE

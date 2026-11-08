@@ -32,6 +32,7 @@ public final class EmployeeService {
     private final SalaryDetailsReader    salaryReader;
     private final AllowanceDetailsReader allowanceReader;
     private final AttendanceService      attendanceService;
+    private final AuditService           audit = AuditService.getInstance();
 
     public EmployeeService() {
         this.employeeReader    = new EmployeeDetailsReader();
@@ -74,6 +75,7 @@ public final class EmployeeService {
 
     // Persists a new employee to Employee.csv, Salary.csv, and Allowance.csv.
     public void addEmployee(Employee employee) {
+        String failure = null;
         try {
             employeeReader.addEmployee(toEmployeeRow(employee));
             salaryReader.addSalary(employee.getEmployeeID(), toSalary(employee));
@@ -85,12 +87,30 @@ public final class EmployeeService {
             allowanceReader.addAllowance(employee.getEmployeeID(), allowance);
         } catch (SQLException e) {
             System.err.println("EmployeeService.addEmployee failed: " + e.getMessage());
+            failure = e.getMessage();
         }
         reloadEmployees();
+
+        // Audit: log the ID read BACK from the database, not the ID the form generated.
+        // The DAO swallows some errors, so a re-read is the only proof the row exists.
+        String[] stored = employeeReader.getEmployeeDetails(employee.getEmployeeID());
+        if (stored != null && failure == null) {
+            audit.log("EMPLOYEE_CREATED", "SUCCESS",
+                    "employeeNum=" + stored[0].trim() + " name=" + stored[2].trim() + " " + stored[1].trim()
+                    + " position=" + stored[11].trim() + " status=" + stored[10].trim());
+        } else {
+            audit.log("EMPLOYEE_CREATE_FAILED", "FAILURE",
+                    "attemptedEmployeeNum=" + employee.getEmployeeID()
+                    + (stored == null ? " rowNotFoundInDatabase" : "")
+                    + (failure != null ? " error=" + failure : ""));
+        }
     }
 
     // Updates an employee's record across all three CSVs.
     public void updateEmployee(Employee employee) {
+        // Snapshot BEFORE the write so the audit entry can list which fields changed.
+        String changed = describeChanges(getEmployeeById(employee.getEmployeeID()), employee);
+        String failure = null;
         try {
             employeeReader.updateEmployee(toEmployeeRow(employee));
             salaryReader.updateSalary(employee.getEmployeeID(), toSalary(employee));
@@ -102,8 +122,17 @@ public final class EmployeeService {
             allowanceReader.updateAllowance(employee.getEmployeeID(), allowance);
         } catch (SQLException e) {
             System.err.println("EmployeeService.updateEmployee failed: " + e.getMessage());
+            failure = e.getMessage();
         }
         reloadEmployees();
+        if (failure == null && getEmployeeById(employee.getEmployeeID()) != null) {
+            audit.log("EMPLOYEE_UPDATED", "SUCCESS",
+                    "employeeNum=" + employee.getEmployeeID() + " fieldsChanged=" + changed);
+        } else {
+            audit.log("EMPLOYEE_UPDATE_FAILED", "FAILURE",
+                    "employeeNum=" + employee.getEmployeeID()
+                    + (failure != null ? " error=" + failure : " recordNotFound"));
+        }
     }
 
     /**
@@ -123,7 +152,15 @@ public final class EmployeeService {
      */
     public void updateEmployee(Employee employee, String callerRole) {
         if ("HR".equalsIgnoreCase(callerRole)) {
-            assertCompensationUnchanged(employee);
+            try {
+                assertCompensationUnchanged(employee);
+            } catch (IllegalArgumentException blocked) {
+                // Authorization failure: record it, then let the caller see the exception as before.
+                audit.log("ACCESS_DENIED", "DENIED",
+                        "action=UPDATE_COMPENSATION employeeNum=" + employee.getEmployeeID()
+                        + " callerRole=" + callerRole);
+                throw blocked;
+            }
         }
         updateEmployee(employee);
     }
@@ -176,14 +213,25 @@ public final class EmployeeService {
     // Removes an employee from all three CSVs; returns true if found and removed.
     public boolean deleteEmployee(String employeeId) {
         boolean deleted = false;
+        // Capture identity BEFORE deletion; afterwards the row no longer exists.
+        Employee before = getEmployeeById(employeeId);
+        String who = before == null ? "" : " name=" + before.getFirstName() + " " + before.getLastName();
+        String failure = null;
         try {
             deleted = employeeReader.deleteEmployee(employeeId);
             salaryReader.deleteSalary(employeeId);
             allowanceReader.deleteAllowance(employeeId);
         } catch (SQLException e) {
             System.err.println("EmployeeService.deleteEmployee failed: " + e.getMessage());
+            failure = e.getMessage();
         }
         if (deleted) reloadEmployees();
+        if (deleted) {
+            audit.log("EMPLOYEE_DELETED", "SUCCESS", "employeeNum=" + employeeId + who);
+        } else {
+            audit.log("EMPLOYEE_DELETE_FAILED", "FAILURE", "employeeNum=" + employeeId
+                    + (failure != null ? " error=" + failure : " notFound"));
+        }
         return deleted;
     }
 
@@ -343,6 +391,37 @@ public final class EmployeeService {
     // -------------------------------------------------------------------------
     //  Conversion helpers (Employee → CSV row / Salary object)
     // -------------------------------------------------------------------------
+
+    // Names of the fields that differ between the stored and the incoming record.
+    // Only field NAMES are logged for sensitive data (compensation, government IDs).
+    private String describeChanges(Employee o, Employee n) {
+        if (o == null) return "unknown(no previous record)";
+        List<String> c = new ArrayList<>();
+        if (!eq(o.getLastName(), n.getLastName())) c.add("lastName");
+        if (!eq(o.getFirstName(), n.getFirstName())) c.add("firstName");
+        if (!eq(o.getBirthday(), n.getBirthday())) c.add("birthday");
+        if (!eq(o.getAddress(), n.getAddress())) c.add("address");
+        if (!eq(o.getPhoneNumber(), n.getPhoneNumber())) c.add("phoneNumber");
+        if (!eq(o.getStatus(), n.getStatus())) c.add("status:" + o.getStatus() + "->" + n.getStatus());
+        if (!eq(o.getPosition(), n.getPosition())) c.add("position:" + o.getPosition() + "->" + n.getPosition());
+        if (!eq(o.getImmediateSupervisor(), n.getImmediateSupervisor())) c.add("immediateSupervisor");
+        if (o.getBasicSalary() != n.getBasicSalary() || o.getHourlyRate() != n.getHourlyRate()
+                || o.getGrossSemiMonthlyRate() != n.getGrossSemiMonthlyRate()) c.add("salary");
+        Allowance oa = o.getAllowanceDetails(), na = n.getAllowanceDetails();
+        double[] a1 = {oa == null ? 0 : oa.getRiceAllowance(), oa == null ? 0 : oa.getPhoneAllowance(), oa == null ? 0 : oa.getClothingAllowance()};
+        double[] a2 = {na == null ? 0 : na.getRiceAllowance(), na == null ? 0 : na.getPhoneAllowance(), na == null ? 0 : na.getClothingAllowance()};
+        if (a1[0] != a2[0] || a1[1] != a2[1] || a1[2] != a2[2]) c.add("allowances");
+        GovernmentDetails og = o.getGovernmentDetails(), ng = n.getGovernmentDetails();
+        if (og != null && ng != null && (!eq(og.getSssNumber(), ng.getSssNumber())
+                || !eq(og.getPhilHealthNumber(), ng.getPhilHealthNumber())
+                || !eq(og.getTinNumber(), ng.getTinNumber())
+                || !eq(og.getPagibigNumber(), ng.getPagibigNumber()))) c.add("governmentIds");
+        return c.isEmpty() ? "none" : String.join(",", c);
+    }
+
+    private static boolean eq(String a, String b) {
+        return (a == null ? "" : a.trim()).equals(b == null ? "" : b.trim());
+    }
 
     // Converts an Employee to the 13-column String array expected by Employee.csv.
     private String[] toEmployeeRow(Employee e) {

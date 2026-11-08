@@ -173,6 +173,10 @@ public class UpdateEmployeeFrame extends javax.swing.JFrame {
             return;
         }
 
+        // Audit read access: opening an employee record exposes personal data.
+        com.group33.cp2.motorph.service.AuditService.getInstance().log(
+                "EMPLOYEE_RECORD_OPENED", "SUCCESS", "employeeNum=" + employeeId);
+
         txtLastName.setText(selectedEmployee.getLastName());
         txtFirstName.setText(selectedEmployee.getFirstName());
         birthdayChooser.setDate(selectedEmployee.getBirthday());

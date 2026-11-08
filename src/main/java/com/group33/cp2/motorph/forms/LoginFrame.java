@@ -5,11 +5,14 @@ import com.group33.cp2.motorph.model.Employee;
 import com.group33.cp2.motorph.model.Finance;
 import com.group33.cp2.motorph.model.HR;
 import com.group33.cp2.motorph.model.IT;
+import com.group33.cp2.motorph.service.AuditService;
 import com.group33.cp2.motorph.service.AuthService;
 import com.group33.cp2.motorph.service.EmployeeService;
 import com.group33.cp2.motorph.service.LoginAttemptService;
 import com.group33.cp2.motorph.util.Constants;
 import com.group33.cp2.motorph.util.DialogUtil;
+import com.group33.cp2.motorph.util.PasswordPolicy;
+import com.group33.cp2.motorph.util.SessionContext;
 import org.mindrot.jbcrypt.BCrypt;
 import java.sql.SQLException;
 
@@ -53,6 +56,15 @@ public class LoginFrame extends javax.swing.JFrame {
     private final AuthService     authService     = new AuthService();
     private final EmployeeService employeeService = new EmployeeService();
     private final LoginAttemptService loginAttemptService = new LoginAttemptService();
+
+    // Returning to the login screen means the previous user logged out (or the dashboard closed):
+    // record it and clear the session so later actions are not attributed to that user.
+    {
+        if (SessionContext.isActive()) {
+            AuditService.getInstance().log("LOGOUT", "SUCCESS", "session ended");
+            SessionContext.end();
+        }
+    }
     private char passwordEchoChar;
 
     public LoginFrame() {
@@ -344,7 +356,7 @@ public class LoginFrame extends javax.swing.JFrame {
         // Check if password change is required
         String changePw = loginRow.length > 4 ? loginRow[4].trim() : "NO";
         if ("YES".equalsIgnoreCase(changePw)) {
-            handleForcePasswordChange(loginRow[0].trim());
+            handleForcePasswordChange(loginRow[0].trim(), username);
             return;
         }
 
@@ -352,13 +364,17 @@ public class LoginFrame extends javax.swing.JFrame {
         String empNum = loginRow[0].trim();
         String role   = loginRow.length > 2 ? loginRow[2].trim().toUpperCase() : "EMPLOYEE";
 
+        // Start the audit session so every later action records WHO did it.
+        SessionContext.start(username, empNum, role);
+        AuditService.getInstance().log("SESSION_STARTED", "SUCCESS", "empNum=" + empNum);
+
         JOptionPane.showMessageDialog(this, "Login Successful! Welcome, " + username + ".");
         openDashboardForRole(role, empNum);
     }
 
     // Prompts the user to set a new password and writes the BCrypt hash to Login.csv.
     // Requires a successful change before proceeding to the dashboard.
-    private void handleForcePasswordChange(String empNum) {
+    private void handleForcePasswordChange(String empNum, String username) {
         JPasswordField newPwField     = new JPasswordField();
         JPasswordField confirmPwField = new JPasswordField();
         Object[] message = {
@@ -386,7 +402,18 @@ public class LoginFrame extends javax.swing.JFrame {
             return;
         }
 
-        String hashed = BCrypt.hashpw(newPw, BCrypt.gensalt());
+        // Complexity policy: length, upper/lower/digit/special, no spaces, no username, not common.
+        java.util.List<String> problems = PasswordPolicy.validate(newPw, username);
+        if (!problems.isEmpty()) {
+            AuditService.getInstance().logAs(username, "", "PASSWORD_CHANGE_REJECTED", "FAILURE",
+                    "empNum=" + empNum + " reason=policy violations=" + problems.size());
+            JOptionPane.showMessageDialog(this, PasswordPolicy.describe(problems),
+                    "Password Too Weak", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // BCrypt work factor 12 (default 10 is weaker). Only the salted hash is stored.
+        String hashed = BCrypt.hashpw(newPw, BCrypt.gensalt(PasswordPolicy.BCRYPT_COST));
         try {
             boolean updated = authService.changeUserPassword(empNum, hashed);
             if (!updated) {
@@ -400,6 +427,7 @@ public class LoginFrame extends javax.swing.JFrame {
             return;
         }
 
+        AuditService.getInstance().logAs(username, "", "PASSWORD_CHANGED", "SUCCESS", "empNum=" + empNum);
         JOptionPane.showMessageDialog(this, "Password changed successfully. Please log in again.",
                 "Password Changed", JOptionPane.INFORMATION_MESSAGE);
         // Don't dispatch yet — require the user to log in again with the new password
